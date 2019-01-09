@@ -1,0 +1,15 @@
+version: '3'
+services:
+  app:
+    build:
+      context: ./
+      dockerfile: app.docker
+    ports:
+      - "80:7350"
+  mongo:
+    container_name: mongo
+    image: mongo
+    volumes:
+      - ./data:/data/db
+    ports:
+      - "27017:27017"
