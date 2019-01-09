@@ -2,8 +2,10 @@ package server
 
 import (
 	"context"
+	"github.com/dgrijalva/jwt-go"
 	"google.golang.org/grpc/status"
 	"spaceship/api"
+	"time"
 )
 
 func (as *Server) AuthenticateFingerprint(context context.Context, request *api.AuthenticateFingerprint) (*api.Session, error) {
@@ -13,12 +15,31 @@ func (as *Server) AuthenticateFingerprint(context context.Context, request *api.
 		return nil, status.Error(400, err.Error())
 	}
 
+	token, _ := generateToken(user.Id.Hex(), user.Username)
+
 	var session api.Session
 	session = api.Session{
-		Token: request.Fingerprint,
+		Token: token,
 		User: user.MapToPB(),
 	}
 
 	return &session, nil
 
+}
+
+func generateToken(userID, username string) (string, int64) {
+	//TODO: Duration parameter should be retrieved from config
+	exp := time.Now().UTC().Add(time.Duration(86400) * time.Second).Unix()
+	return generateTokenWithExpiry(userID, username, exp)
+}
+
+func generateTokenWithExpiry(userID, username string, exp int64) (string, int64) {
+	//TODO: Encryption key should be retrieved from config
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"uid": userID,
+		"exp": exp,
+		"usn": username,
+	})
+	signedToken, _ := token.SignedString([]byte("asdasdqweqasdqwwe"))
+	return signedToken, exp
 }

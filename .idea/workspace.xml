@@ -3,23 +3,34 @@
   <component name="ChangeListManager">
     <list default="true" id="8c86ab1a-ee8d-4b48-b5b7-6e24e4709194" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/WiredTiger.turtle" beforeDir="false" afterPath="$PROJECT_DIR$/data/WiredTiger.turtle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/WiredTiger.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/WiredTiger.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/_mdb_catalog.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/_mdb_catalog.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/collection-2--3537917334757040081.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/collection-2--3537917334757040081.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/collection-4--3537917334757040081.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/collection-4--3537917334757040081.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.interim" beforeDir="false" afterPath="$PROJECT_DIR$/data/diagnostic.data/metrics.interim" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-3--3537917334757040081.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/index-3--3537917334757040081.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-5--3537917334757040081.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/index-5--3537917334757040081.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-6--3537917334757040081.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/index-6--3537917334757040081.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/journal/WiredTigerLog.0000000002" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sizeStorer.wt" beforeDir="false" afterPath="$PROJECT_DIR$/data/sizeStorer.wt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/api.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/api.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/WiredTiger" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/WiredTiger.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/WiredTiger.turtle" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/WiredTiger.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/WiredTigerLAS.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/_mdb_catalog.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/collection-0--3537917334757040081.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/collection-0--4110715161588129397.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/collection-2--3537917334757040081.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/collection-4--3537917334757040081.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-08T13-36-56Z-00000" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-08T13-44-03Z-00000" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-09T08-51-44Z-00000" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-09T08-59-05Z-00000" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-09T09-07-42Z-00000" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.interim" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/index-1--3537917334757040081.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/index-1--4110715161588129397.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/index-3--3537917334757040081.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/index-5--3537917334757040081.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/index-6--3537917334757040081.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/journal/WiredTigerLog.0000000005" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/journal/WiredTigerPreplog.0000000001" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/journal/WiredTigerPreplog.0000000002" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/mongod.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/sizeStorer.wt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/storage.bson" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/server/api_account.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/api_account.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/modules.txt" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/modules.txt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -42,7 +53,7 @@
         <entry file="file://$PROJECT_DIR$/server/api.go">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="1215">
-              <caret line="118" column="12" lean-forward="true" selection-start-line="118" selection-start-column="12" selection-end-line="118" selection-end-column="12" />
+              <caret line="118" column="12" selection-start-line="118" selection-start-column="12" selection-end-line="118" selection-end-column="12" />
               <folding>
                 <element signature="e#16#317#0" expanded="true" />
               </folding>
@@ -50,11 +61,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/server/api_account.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="10" column="28" lean-forward="true" selection-start-line="10" selection-start-column="28" selection-end-line="10" selection-end-column="28" />
+            <state relative-caret-position="240">
+              <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
               <folding>
                 <element signature="e#16#54#0" expanded="true" />
               </folding>
@@ -62,11 +73,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/server/core_account.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="228">
-              <caret line="28" lean-forward="true" selection-start-line="28" selection-end-line="28" />
+            <state relative-caret-position="408">
+              <caret line="40" column="50" selection-start-line="40" selection-start-column="50" selection-end-line="40" selection-end-column="50" />
               <folding>
                 <element signature="e#16#74#0" expanded="true" />
               </folding>
@@ -121,9 +132,10 @@
         <option value="$PROJECT_DIR$/api/api.pb.go" />
         <option value="$PROJECT_DIR$/model/user.go" />
         <option value="$PROJECT_DIR$/server/core_account.go" />
-        <option value="$PROJECT_DIR$/server/api_account.go" />
         <option value="$PROJECT_DIR$/docker-compose.yml" />
         <option value="$PROJECT_DIR$/server/api.go" />
+        <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/server/api_account.go" />
       </list>
     </option>
   </component>
@@ -136,37 +148,27 @@
     <ConfirmationsSetting value="1" id="Add" />
   </component>
   <component name="ProjectView">
-    <navigator proportions="" version="1">
+    <navigator currentView="Scope" currentSubView="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope" proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
+      <pane id="Scope">
+        <subPane subId="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope">
+          <expand>
+            <path>
+              <item name="spaceship" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
       <pane id="ProjectPane">
         <subPane>
           <expand>
             <path>
               <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
               <item name="spaceship" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
-              <item name="spaceship" type="462c0819:PsiDirectoryNode" />
-              <item name="api" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
-              <item name="spaceship" type="462c0819:PsiDirectoryNode" />
-              <item name="apigrpc" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
-              <item name="spaceship" type="462c0819:PsiDirectoryNode" />
-              <item name="model" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
-              <item name="spaceship" type="462c0819:PsiDirectoryNode" />
-              <item name="server" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -364,7 +366,7 @@
     <entry file="file://$PROJECT_DIR$/server/api.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1215">
-          <caret line="118" column="12" lean-forward="true" selection-start-line="118" selection-start-column="12" selection-end-line="118" selection-end-column="12" />
+          <caret line="118" column="12" selection-start-line="118" selection-start-column="12" selection-end-line="118" selection-end-column="12" />
           <folding>
             <element signature="e#16#317#0" expanded="true" />
           </folding>
@@ -381,22 +383,29 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/server/api_account.go">
+    <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" column="28" lean-forward="true" selection-start-line="10" selection-start-column="28" selection-end-line="10" selection-end-column="28" />
-          <folding>
-            <element signature="e#16#54#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="390">
+          <caret line="26" column="5" lean-forward="true" selection-start-line="26" selection-start-column="5" selection-end-line="26" selection-end-column="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/server/core_account.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="228">
-          <caret line="28" lean-forward="true" selection-start-line="28" selection-end-line="28" />
+        <state relative-caret-position="408">
+          <caret line="40" column="50" selection-start-line="40" selection-start-column="50" selection-end-line="40" selection-end-column="50" />
           <folding>
             <element signature="e#16#74#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/server/api_account.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
+          <folding>
+            <element signature="e#16#54#0" expanded="true" />
           </folding>
         </state>
       </provider>
