@@ -1,0 +1,8 @@
+language: go
+sudo: false
+go_import_path: cirello.io/goherokuname
+go:
+  - "1.11"
+env:
+  global:
+    - GO111MODULE=on
