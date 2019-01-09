@@ -145,7 +145,7 @@ func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.Un
 	case "/spaceship.api.SpaceShip/AuthenticateFingerprint":
 		//No security everyone can make request to this endpoint
 		return ctx, nil
-	case "/spaceship.api.SpaceShip/TestEcho":
+	default:
 		// This endpoint requires autrhozation with bearer
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
