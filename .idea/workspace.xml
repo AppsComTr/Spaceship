@@ -3,33 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="8c86ab1a-ee8d-4b48-b5b7-6e24e4709194" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/WiredTiger" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/WiredTiger.lock" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/WiredTiger.turtle" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/WiredTiger.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/WiredTigerLAS.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/_mdb_catalog.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/collection-0--3537917334757040081.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/collection-0--4110715161588129397.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/collection-2--3537917334757040081.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/collection-4--3537917334757040081.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-08T13-36-56Z-00000" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-08T13-44-03Z-00000" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-09T08-51-44Z-00000" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-09T08-59-05Z-00000" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.2019-01-09T09-07-42Z-00000" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/diagnostic.data/metrics.interim" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-1--3537917334757040081.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-1--4110715161588129397.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-3--3537917334757040081.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-5--3537917334757040081.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/index-6--3537917334757040081.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/journal/WiredTigerLog.0000000005" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/journal/WiredTigerPreplog.0000000001" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/journal/WiredTigerPreplog.0000000002" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/mongod.lock" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sizeStorer.wt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/storage.bson" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/api/api.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/api/api.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apigrpc/apigrpc.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/apigrpc/apigrpc.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apigrpc/apigrpc.pb.gw.go" beforeDir="false" afterPath="$PROJECT_DIR$/apigrpc/apigrpc.pb.gw.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apigrpc/apigrpc.proto" beforeDir="false" afterPath="$PROJECT_DIR$/apigrpc/apigrpc.proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/api.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/api.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/api_account.go" beforeDir="false" afterPath="$PROJECT_DIR$/server/api_account.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -52,11 +30,26 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/server/api.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1215">
-              <caret line="118" column="12" selection-start-line="118" selection-start-column="12" selection-end-line="118" selection-end-column="12" />
-              <folding>
-                <element signature="e#16#317#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="44">
+              <caret line="21" column="23" lean-forward="true" selection-start-line="21" selection-start-column="23" selection-end-line="21" selection-end-column="23" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/vendor/google.golang.org/grpc/codes/codes.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="296">
+              <caret line="42" column="7" selection-start-line="42" selection-start-column="7" selection-end-line="42" selection-end-column="7" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/apigrpc/apigrpc.proto">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="420">
+              <caret line="28" column="16" selection-start-line="28" selection-start-column="8" selection-end-line="28" selection-end-column="16" />
             </state>
           </provider>
         </entry>
@@ -64,8 +57,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/server/api_account.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
+            <state relative-caret-position="480">
+              <caret line="32" column="5" lean-forward="true" selection-start-line="32" selection-start-column="5" selection-end-line="32" selection-end-column="5" />
               <folding>
                 <element signature="e#16#54#0" expanded="true" />
               </folding>
@@ -126,15 +119,15 @@
         <option value="$PROJECT_DIR$/main.go" />
         <option value="$PROJECT_DIR$/Makefile" />
         <option value="$PROJECT_DIR$/api/api.proto" />
-        <option value="$PROJECT_DIR$/apigrpc/apigrpc.proto" />
         <option value="$PROJECT_DIR$/apigrpc/apigrpc.pb.go" />
         <option value="$PROJECT_DIR$/app.docker" />
         <option value="$PROJECT_DIR$/api/api.pb.go" />
         <option value="$PROJECT_DIR$/model/user.go" />
         <option value="$PROJECT_DIR$/server/core_account.go" />
         <option value="$PROJECT_DIR$/docker-compose.yml" />
-        <option value="$PROJECT_DIR$/server/api.go" />
         <option value="$PROJECT_DIR$/.gitignore" />
+        <option value="$PROJECT_DIR$/apigrpc/apigrpc.proto" />
+        <option value="$PROJECT_DIR$/server/api.go" />
         <option value="$PROJECT_DIR$/server/api_account.go" />
       </list>
     </option>
@@ -148,7 +141,7 @@
     <ConfirmationsSetting value="1" id="Add" />
   </component>
   <component name="ProjectView">
-    <navigator currentView="Scope" currentSubView="Scope 'Project Files'; set:Project Files; class com.intellij.psi.search.scope.ProjectFilesScope" proportions="" version="1">
+    <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
@@ -158,6 +151,11 @@
             <path>
               <item name="spaceship" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
               <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+            </path>
+            <path>
+              <item name="spaceship" type="3d21c010:ScopeViewTreeModel$ProjectNode" />
+              <item name="" type="442cc68d:ScopeViewTreeModel$RootNode" />
+              <item name="api" type="9f88c78c:ScopeViewTreeModel$FileNode" />
             </path>
           </expand>
           <select />
@@ -169,6 +167,21 @@
             <path>
               <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
               <item name="spaceship" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
+              <item name="spaceship" type="462c0819:PsiDirectoryNode" />
+              <item name="api" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
+              <item name="spaceship" type="462c0819:PsiDirectoryNode" />
+              <item name="apigrpc" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="spaceship" type="b2602c69:ProjectViewProjectNode" />
+              <item name="spaceship" type="462c0819:PsiDirectoryNode" />
+              <item name="model" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -201,6 +214,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1680" height="1027" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25274727" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -215,7 +229,7 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="8" />
       <window_info anchor="bottom" id="Version Control" order="9" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="10" visible="true" weight="0.6449198" />
+      <window_info anchor="bottom" id="Terminal" order="10" weight="0.6449198" />
       <window_info anchor="bottom" id="Event Log" order="11" side_tool="true" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -304,13 +318,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/apigrpc/apigrpc.proto">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="30" selection-start-line="9" selection-start-column="30" selection-end-line="9" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Makefile">
       <provider selected="true" editor-type-id="text-editor">
         <state>
@@ -363,16 +370,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/server/api.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1215">
-          <caret line="118" column="12" selection-start-line="118" selection-start-column="12" selection-end-line="118" selection-end-column="12" />
-          <folding>
-            <element signature="e#16#317#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/model/user.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="645">
@@ -400,10 +397,45 @@
         </state>
       </provider>
     </entry>
+    <entry file="file:///usr/local/Cellar/go/1.11.2/libexec/src/context/context.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="415">
+          <caret line="467" column="5" selection-start-line="467" selection-start-column="5" selection-end-line="467" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vendor/google.golang.org/grpc/codes/codes.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="296">
+          <caret line="42" column="7" selection-start-line="42" selection-start-column="7" selection-end-line="42" selection-end-column="7" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/local/Cellar/go/1.11.2/libexec/src/builtin/builtin.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="303">
+          <caret line="70" column="5" selection-start-line="70" selection-start-column="5" selection-end-line="70" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/server/api.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="44">
+          <caret line="21" column="23" lean-forward="true" selection-start-line="21" selection-start-column="23" selection-end-line="21" selection-end-column="23" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/apigrpc/apigrpc.proto">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="420">
+          <caret line="28" column="16" selection-start-line="28" selection-start-column="8" selection-end-line="28" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/server/api_account.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
+        <state relative-caret-position="480">
+          <caret line="32" column="5" lean-forward="true" selection-start-line="32" selection-start-column="5" selection-end-line="32" selection-end-column="5" />
           <folding>
             <element signature="e#16#54#0" expanded="true" />
           </folding>

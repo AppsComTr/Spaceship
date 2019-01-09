@@ -4,19 +4,28 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"context"
+	"crypto"
 	"fmt"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/globalsign/mgo"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"log"
 	"net"
 	"net/http"
 	"spaceship/apigrpc"
 	"strings"
 )
+
+type ctxUserIDKey struct{}
+type ctxUsernameKey struct{}
+type ctxExpiryKey struct{}
+type ctxFullMethodKey struct{}
 
 type Server struct {
 	db 					 *mgo.Session
@@ -28,7 +37,18 @@ func StartServer() *Server {
 
 	port := 7350
 
-	grpcServer := grpc.NewServer()
+	serverOpts := []grpc.ServerOption{
+		grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+			nCtx, err := securityInterceptorFunc(ctx, req, info)
+			if err != nil {
+				return nil, err
+			}
+			ctx = nCtx
+			return handler(ctx, req)
+		}),
+	}
+
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	s := &Server{
 		grpcServer: grpcServer,
@@ -120,8 +140,75 @@ func StartServer() *Server {
 
 }
 
+func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (context.Context, error) {
+	switch info.FullMethod {
+	case "/spaceship.api.SpaceShip/AuthenticateFingerprint":
+		//No security everyone can make request to this endpoint
+		return ctx, nil
+	case "/spaceship.api.SpaceShip/TestEcho":
+		// This endpoint requires autrhozation with bearer
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			log.Println("Cannot extract metadata from incoming context")
+			return nil, status.Error(codes.FailedPrecondition, "Cannot extract metadata from incoming context")
+		}
+		auth, ok := md["authorization"]
+		if !ok {
+			auth, ok = md["grpcgateway-authorization"]
+		}
+		if !ok {
+			// Neither "authorization" nor "grpc-authorization" were supplied.
+			return nil, status.Error(codes.Unauthenticated, "Auth token required")
+		}
+		if len(auth) != 1 {
+			// Value of "authorization" or "grpc-authorization" was empty or repeated.
+			return nil, status.Error(codes.Unauthenticated, "Auth token invalid")
+		}
+		userID, username, exp, ok := parseBearerAuth([]byte("asdasdqweqasdqwwe"), auth[0])
+		if !ok {
+			// Value of "authorization" or "grpc-authorization" was malformed or expired.
+			return nil, status.Error(codes.Unauthenticated, "Auth token invalid")
+		}
+		ctx = context.WithValue(context.WithValue(context.WithValue(ctx, ctxUserIDKey{}, userID), ctxUsernameKey{}, username), ctxExpiryKey{}, exp)
+	}
+	return context.WithValue(ctx, ctxFullMethodKey{}, info.FullMethod), nil
+}
+
+func parseBearerAuth(hmacSecretByte []byte, auth string) (userID string, username string, exp int64, ok bool) {
+	if auth == "" {
+		return
+	}
+	const prefix = "Bearer "
+	if !strings.HasPrefix(auth, prefix) {
+		return
+	}
+	return parseToken(hmacSecretByte, string(auth[len(prefix):]))
+}
+
+func parseToken(hmacSecretByte []byte, tokenString string) (userID string, username string, exp int64, ok bool) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if s, ok := token.Method.(*jwt.SigningMethodHMAC); !ok || s.Hash != crypto.SHA256 {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return hmacSecretByte, nil
+	})
+	if err != nil {
+		return
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || !token.Valid {
+		return
+	}
+	userID, ok = claims["uid"].(string)
+	if !ok {
+		return
+	}
+	return userID, claims["usn"].(string), int64(claims["exp"].(float64)), true
+}
+
 func connectDB() *mgo.Session {
 
+	//TODO: connection string should be retrieved from config
 	conn, err := mgo.Dial("mongo")
 	if err != nil {
 		log.Fatal("Cannot dial mongo", err)

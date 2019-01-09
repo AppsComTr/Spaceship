@@ -26,4 +26,10 @@ service SpaceShip {
         };
     }
 
+    rpc TestEcho(google.protobuf.Empty) returns (api.Session) {
+        option (google.api.http) = {
+            get: "/v1/echo"
+        };
+    }
+
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/status"
 	"spaceship/api"
 	"time"
@@ -25,6 +26,12 @@ func (as *Server) AuthenticateFingerprint(context context.Context, request *api.
 
 	return &session, nil
 
+}
+
+func (as *Server) TestEcho(context context.Context, empty *empty.Empty) (*api.Session, error){
+	return &api.Session{
+		Token: "at",
+	}, nil
 }
 
 func generateToken(userID, username string) (string, int64) {
