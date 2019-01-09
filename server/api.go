@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"github.com/globalsign/mgo"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -18,6 +19,7 @@ import (
 )
 
 type Server struct {
+	db 					 *mgo.Session
 	grpcServer           *grpc.Server
 	grpcGatewayServer    *http.Server
 }
@@ -31,6 +33,9 @@ func StartServer() *Server {
 	s := &Server{
 		grpcServer: grpcServer,
 	}
+
+	db := connectDB()
+	s.db = db
 
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)
 
@@ -112,6 +117,17 @@ func StartServer() *Server {
 	}()
 
 	return s
+
+}
+
+func connectDB() *mgo.Session {
+
+	conn, err := mgo.Dial("mongo")
+	if err != nil {
+		log.Fatal("Cannot dial mongo", err)
+	}
+	log.Println("Mongo connection completed")
+	return conn
 
 }
 

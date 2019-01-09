@@ -1,0 +1,26 @@
+FROM golang:alpine AS build-env
+RUN apk add --no-cache git mercurial ca-certificates
+
+ARG pkg=spaceship
+COPY . $GOPATH/src/$pkg
+
+RUN set -ex \
+      && apk add --no-cache --virtual .build-deps \
+              git \
+      && apk del git mercurial .build-deps
+
+WORKDIR $GOPATH/src/$pkg
+RUN go build -o $pkg
+
+FROM alpine
+
+RUN apk update && \
+    apk add --no-cache ca-certificates && \
+    update-ca-certificates
+
+COPY --from=build-env /go/src/spaceship/spaceship /
+
+EXPOSE 7350
+CMD ["./spaceship"]
+
+
