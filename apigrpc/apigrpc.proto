@@ -26,6 +26,13 @@ service SpaceShip {
         };
     }
 
+    rpc AuthenticateFacebook(api.AuthenticateFacebook) returns (api.Session) {
+        option (google.api.http) = {
+            post: "/v1/account/authenticate/facebook",
+            body: "*"
+        };
+    }
+
     rpc TestEcho(google.protobuf.Empty) returns (api.Session) {
         option (google.api.http) = {
             get: "/v1/echo"

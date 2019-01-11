@@ -28,6 +28,25 @@ func (as *Server) AuthenticateFingerprint(context context.Context, request *api.
 
 }
 
+func (as *Server) AuthenticateFacebook(context context.Context, request *api.AuthenticateFacebook) (*api.Session, error) {
+
+	user, err := AuthenticateFacebook(request.Fingerprint, request.Token, as.db)
+	if err != nil {
+		return nil, status.Error(400, err.Error())
+	}
+
+	token, _ := generateToken(user.Id.Hex(), user.Username)
+
+	var session api.Session
+	session = api.Session{
+		Token: token,
+		User: user.MapToPB(),
+	}
+
+	return &session, nil
+
+}
+
 func (as *Server) TestEcho(context context.Context, empty *empty.Empty) (*api.Session, error){
 	return &api.Session{
 		Token: "at",

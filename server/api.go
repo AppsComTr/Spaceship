@@ -142,6 +142,8 @@ func StartServer() *Server {
 
 func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (context.Context, error) {
 	switch info.FullMethod {
+	case "/spaceship.api.SpaceShip/AuthenticateFacebook":
+		fallthrough
 	case "/spaceship.api.SpaceShip/AuthenticateFingerprint":
 		//No security everyone can make request to this endpoint
 		return ctx, nil

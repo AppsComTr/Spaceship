@@ -18,12 +18,13 @@ option csharp_namespace = "SpaceShip";
 
 option objc_class_prefix = "SSP";
 
-message AuthenticateFingerprintRequest {
-    AuthenticateFingerprint fingerprint = 1;
-}
-
 message AuthenticateFingerprint {
     string fingerprint = 1;
+}
+
+message AuthenticateFacebook {
+    string fingerprint = 1;
+    string token = 2;
 }
 
 message User {
