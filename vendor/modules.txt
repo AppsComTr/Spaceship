@@ -1,7 +1,5 @@
 # cirello.io v1.3.0
 cirello.io/goherokuname
-# github.com/davecgh/go-spew v1.1.0
-github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
 # github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
@@ -30,6 +28,8 @@ github.com/gorilla/context
 github.com/gorilla/handlers
 # github.com/gorilla/mux v1.6.2
 github.com/gorilla/mux
+# github.com/gorilla/websocket v1.4.0
+github.com/gorilla/websocket
 # github.com/grpc-ecosystem/grpc-gateway v1.6.4
 github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options
 github.com/grpc-ecosystem/grpc-gateway/runtime
@@ -37,6 +37,10 @@ github.com/grpc-ecosystem/grpc-gateway/utilities
 github.com/grpc-ecosystem/grpc-gateway/runtime/internal
 # github.com/huandu/facebook v2.3.1+incompatible
 github.com/huandu/facebook
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
+# github.com/satori/go.uuid v1.2.0
+github.com/satori/go.uuid
 # golang.org/x/net v0.0.0-20190107210223-45ffb0cd1ba0
 golang.org/x/net/context
 golang.org/x/net/trace

@@ -10,7 +10,9 @@ import (
 
 func main()  {
 
-	_ = server.StartServer()
+	sessionHolder := server.NewSessionHolder()
+
+	_ = server.StartServer(sessionHolder)
 
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

@@ -1,0 +1,185 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Space Ship API v1",
+    "version": "1.0",
+    "contact": {
+      "name": "APPS Information Tech.",
+      "url": "https://apps.com.tr",
+      "email": "info@apps.com.tr"
+    }
+  },
+  "host": "127.0.0.1:7350",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/account/authenticate/facebook": {
+      "post": {
+        "operationId": "AuthenticateFacebook",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiSession"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/apiAuthenticateFacebook"
+            }
+          }
+        ],
+        "tags": [
+          "SpaceShip"
+        ]
+      }
+    },
+    "/v1/account/authenticate/fingerprint": {
+      "post": {
+        "operationId": "AuthenticateFingerprint",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiSession"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/apiAuthenticateFingerprint"
+            }
+          }
+        ],
+        "tags": [
+          "SpaceShip"
+        ]
+      }
+    },
+    "/v1/echo": {
+      "get": {
+        "operationId": "TestEcho",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/apiSession"
+            }
+          }
+        },
+        "tags": [
+          "SpaceShip"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "apiAuthenticateFacebook": {
+      "type": "object",
+      "properties": {
+        "fingerprint": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        }
+      }
+    },
+    "apiAuthenticateFingerprint": {
+      "type": "object",
+      "properties": {
+        "fingerprint": {
+          "type": "string"
+        }
+      }
+    },
+    "apiSession": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/apiUser"
+        },
+        "token": {
+          "type": "string"
+        }
+      }
+    },
+    "apiUser": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The id of the user's account."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user's account."
+        },
+        "fingerprint": {
+          "type": "string",
+          "title": "The fingerprint parameter for the user"
+        },
+        "display_name": {
+          "type": "string",
+          "description": "The display name of the user."
+        },
+        "avatar_url": {
+          "type": "string",
+          "description": "A URL for an avatar image."
+        },
+        "metadata": {
+          "type": "string",
+          "description": "Additional information stored as a JSON object."
+        },
+        "facebook_id": {
+          "type": "string",
+          "description": "The Facebook id in the user's account."
+        },
+        "online": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Indicates whether the user is currently online."
+        },
+        "create_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The UNIX time when the user was created."
+        },
+        "update_time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The UNIX time when the user was last updated."
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "BasicAuth": {
+      "type": "basic"
+    },
+    "BearerJwt": {
+      "type": ""
+    }
+  },
+  "security": [
+    {
+      "BearerJwt": []
+    }
+  ]
+}

@@ -33,7 +33,7 @@ type Server struct {
 	grpcGatewayServer    *http.Server
 }
 
-func StartServer() *Server {
+func StartServer(sessionHolder *SessionHolder) *Server {
 
 	port := 7350
 
@@ -100,7 +100,7 @@ func StartServer() *Server {
 	grpcGatewayRouter := mux.NewRouter()
 	// Special case routes. Do NOT enable compression on WebSocket route, it results in "http: response.Write on hijacked connection" errors.
 	grpcGatewayRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }).Methods("GET")
-	//grpcGatewayRouter.HandleFunc("/ws", NewSocketWsAcceptor(logger, config, sessionRegistry, matchmaker, tracker, jsonpbMarshaler, jsonpbUnmarshaler, pipeline)).Methods("GET")
+	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder)).Methods("GET")
 
 
 	grpcGatewayRouter.NewRoute().HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
