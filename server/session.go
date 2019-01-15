@@ -1,14 +1,18 @@
 package server
 
 import (
+	"bytes"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
+	"go.uber.org/atomic"
 	"log"
 	"net"
+	"spaceship/socketapi"
 	"sync"
 	"time"
-	"go.uber.org/atomic"
 )
 
 type session struct {
@@ -27,12 +31,18 @@ type session struct {
 	config *Config
 	conn *websocket.Conn
 
+	jsonProtoMarshler *jsonpb.Marshaler
+	jsonProtoUnmarshler *jsonpb.Unmarshaler
+
 	receivedMsgDecrement int
 	pingTimer *time.Timer
 	pingTimerCas *atomic.Uint32
+
+	gameHolder *GameHolder
+	outgoingCh chan []byte
 }
 
-func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config) Session {
+func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler) Session {
 
 	sessionID := uuid.Must(uuid.NewV4(), nil)
 
@@ -51,9 +61,15 @@ func NewSession(userID string, username string, expiry int64, clientIP string, c
 		config: config,
 		conn: conn,
 
+		jsonProtoMarshler: jsonProtoMarshler,
+		jsonProtoUnmarshler: jsonProtoUnmarshler,
+
 		receivedMsgDecrement: config.SocketConfig.ReceivedMessageDecrementCount,
 		pingTimer: time.NewTimer(time.Duration(config.SocketConfig.PingPeriodTime) * time.Millisecond),
 		pingTimerCas: atomic.NewUint32(1),
+
+		gameHolder: gameHolder,
+		outgoingCh: make(chan []byte, config.SocketConfig.OutgoingQueueSize),
 	}
 
 }
@@ -126,12 +142,17 @@ func (s *session) Consume() {
 			}
 		}
 
+		request := &socketapi.Envelope{}
+
+		//TODO: we can also handle proto messages
+		err = s.jsonProtoUnmarshler.Unmarshal(bytes.NewReader(data), request)
+
 		if err != nil {
 			log.Println("Read message error", errors.WithStack(err))
-			break
+			//break
 		}
 
-		log.Println(data)
+		spew.Dump(request)
 
 	}
 
@@ -173,6 +194,16 @@ func (s *session) processOutgoing() {
 				return
 			}
 			break
+		case payload := <-s.outgoingCh:
+			s.Lock()
+			// Process the outgoing message queue.
+			s.conn.SetWriteDeadline(time.Now().Add(10*time.Second))
+			if err := s.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+				s.Unlock()
+				log.Println("Could not write message", errors.WithStack(err))
+				return
+			}
+			s.Unlock()
 		}
 	}
 
@@ -197,4 +228,45 @@ func (s *session) pingNow() bool {
 	}
 
 	return true
+}
+
+
+func (s *session) Send(isStream bool, mode uint8, envelope *socketapi.Envelope) error {
+	var payload []byte
+	var err error
+	var buf bytes.Buffer
+	//TODO: sessions will support proto and json. it should be handled in here too
+	if err = s.jsonProtoMarshler.Marshal(&buf, envelope); err == nil {
+		payload = buf.Bytes()
+	}
+	if err != nil {
+		log.Print("Could not marshal envelope", errors.WithStack(err))
+		return err
+	}
+
+	return s.SendBytes(isStream, mode, []byte(payload))
+}
+
+func (s *session) SendBytes(isStream bool, mode uint8, payload []byte) error {
+	s.Lock()
+
+	if isStream {
+		s.outgoingCh <- payload
+		s.Unlock()
+		return nil
+	}
+
+	// By default attempt to queue messages and observe failures.
+	select {
+	case s.outgoingCh <- payload:
+		s.Unlock()
+		return nil
+	default:
+		// The outgoing queue is full, likely because the remote client can't keep up.
+		// Terminate the connection immediately because the only alternative that doesn't block the server is
+		// to start dropping messages, which might cause unexpected behaviour.
+		s.Unlock()
+		log.Println("Could not write message, session outgoing queue full")
+		return errors.New("outgoing queue full")
+	}
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"log"
@@ -9,7 +10,7 @@ import (
 	"strings"
 )
 
-func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config) func(http.ResponseWriter, *http.Request) {
+func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline) func(http.ResponseWriter, *http.Request) {
 	upgrader := &websocket.Upgrader{
 		ReadBufferSize: 4096,
 		WriteBufferSize: 4096,
@@ -57,7 +58,7 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config) func(http.R
 			return
 		}
 
-		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config)
+		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler)
 
 		log.Println("New socket connection was established id: " + s.ID().String())
 

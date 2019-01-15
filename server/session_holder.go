@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/satori/go.uuid"
+	"spaceship/socketapi"
 	"sync"
 )
 
@@ -18,8 +19,8 @@ type Session interface {
 	//Consume(func(session Session, envelope *rtapi.Envelope) bool)
 	Consume()
 
-	//Send(isStream bool, mode uint8, envelope *rtapi.Envelope) error
-	//SendBytes(isStream bool, mode uint8, payload []byte) error
+	Send(isStream bool, mode uint8, envelope *socketapi.Envelope) error
+	SendBytes(isStream bool, mode uint8, payload []byte) error
 
 	//Close()
 }

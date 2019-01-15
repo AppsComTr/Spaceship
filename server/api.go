@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/globalsign/mgo"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -32,9 +33,10 @@ type Server struct {
 	grpcServer           *grpc.Server
 	grpcGatewayServer    *http.Server
 	config *Config
+	gameHolder *GameHolder
 }
 
-func StartServer(sessionHolder *SessionHolder, config *Config) *Server {
+func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline) *Server {
 
 	port := config.Port
 
@@ -54,6 +56,7 @@ func StartServer(sessionHolder *SessionHolder, config *Config) *Server {
 	s := &Server{
 		grpcServer: grpcServer,
 		config: config,
+		gameHolder: gameHolder,
 	}
 
 	db := connectDB(config)
@@ -102,7 +105,7 @@ func StartServer(sessionHolder *SessionHolder, config *Config) *Server {
 	grpcGatewayRouter := mux.NewRouter()
 	// Special case routes. Do NOT enable compression on WebSocket route, it results in "http: response.Write on hijacked connection" errors.
 	grpcGatewayRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }).Methods("GET")
-	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config)).Methods("GET")
+	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, pipeline)).Methods("GET")
 
 
 	grpcGatewayRouter.NewRoute().HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

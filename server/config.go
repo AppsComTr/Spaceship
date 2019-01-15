@@ -6,6 +6,7 @@ type Config struct {
 		PongWaitTime int `default:"10000"`
 		WriteWaitTime int `default:"5000"`
 		ReceivedMessageDecrementCount int `default:"20"`
+		OutgoingQueueSize int `default:"64"`
 	}
 	DBConfig struct{
 		ConnString string `default:"mongo"`
