@@ -60,6 +60,8 @@ func NewSocketAcceptor(sessionHolder *SessionHolder) func(http.ResponseWriter, *
 
 		s := NewSession(userID, username, expiry, clientIP, clientPort, conn)
 
+		log.Println("New socket connection was established id: " + s.ID().String())
+
 		sessionHolder.add(s)
 
 		s.Consume()

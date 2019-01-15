@@ -13,6 +13,7 @@ require (
 	github.com/huandu/facebook v2.3.1+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
+	go.uber.org/atomic v1.3.2
 	golang.org/x/net v0.0.0-20190107210223-45ffb0cd1ba0
 	google.golang.org/genproto v0.0.0-20181221175505-bd9b4fb69e2f
 	google.golang.org/grpc v1.17.0
