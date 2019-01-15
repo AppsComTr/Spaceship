@@ -19,6 +19,7 @@ RUN apk update && \
     update-ca-certificates
 
 COPY --from=build-env /go/src/spaceship/spaceship /
+COPY --from=build-env /go/src/spaceship/config.yml /
 
 EXPOSE 7350
 CMD ["./spaceship"]

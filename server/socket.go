@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func NewSocketAcceptor(sessionHolder *SessionHolder) func(http.ResponseWriter, *http.Request) {
+func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config) func(http.ResponseWriter, *http.Request) {
 	upgrader := &websocket.Upgrader{
 		ReadBufferSize: 4096,
 		WriteBufferSize: 4096,
@@ -26,8 +26,7 @@ func NewSocketAcceptor(sessionHolder *SessionHolder) func(http.ResponseWriter, *
 			return
 		}
 
-		//TODO: hmac key will readed from config
-		userID, username, expiry, ok := parseToken([]byte("asdasdqweqasdqwwe"), token)
+		userID, username, expiry, ok := parseToken([]byte(config.AuthConfig.JWTSecret), token)
 		if !ok {
 			http.Error(w, "Invalid token", 401)
 			return
@@ -58,7 +57,7 @@ func NewSocketAcceptor(sessionHolder *SessionHolder) func(http.ResponseWriter, *
 			return
 		}
 
-		s := NewSession(userID, username, expiry, clientIP, clientPort, conn)
+		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config)
 
 		log.Println("New socket connection was established id: " + s.ID().String())
 

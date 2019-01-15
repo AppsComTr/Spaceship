@@ -1,0 +1,11 @@
+dbconfig:
+  connstring: "mongo"
+socketconfig:
+  pingperiodtime: 8000
+  pongwaittime: 10000
+  writewaittime: 5000
+  receivedmessagedecrementcount: 20
+authconfig:
+  jwtsecret: asdasdqweqasdqwwe
+  tokenexpiretime: 86400
+port: 7350

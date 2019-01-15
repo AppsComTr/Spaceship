@@ -31,11 +31,12 @@ type Server struct {
 	db 					 *mgo.Session
 	grpcServer           *grpc.Server
 	grpcGatewayServer    *http.Server
+	config *Config
 }
 
-func StartServer(sessionHolder *SessionHolder) *Server {
+func StartServer(sessionHolder *SessionHolder, config *Config) *Server {
 
-	port := 7350
+	port := config.Port
 
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
@@ -52,9 +53,10 @@ func StartServer(sessionHolder *SessionHolder) *Server {
 
 	s := &Server{
 		grpcServer: grpcServer,
+		config: config,
 	}
 
-	db := connectDB()
+	db := connectDB(config)
 	s.db = db
 
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)
@@ -100,7 +102,7 @@ func StartServer(sessionHolder *SessionHolder) *Server {
 	grpcGatewayRouter := mux.NewRouter()
 	// Special case routes. Do NOT enable compression on WebSocket route, it results in "http: response.Write on hijacked connection" errors.
 	grpcGatewayRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }).Methods("GET")
-	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder)).Methods("GET")
+	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config)).Methods("GET")
 
 
 	grpcGatewayRouter.NewRoute().HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -208,10 +210,9 @@ func parseToken(hmacSecretByte []byte, tokenString string) (userID string, usern
 	return userID, claims["usn"].(string), int64(claims["exp"].(float64)), true
 }
 
-func connectDB() *mgo.Session {
+func connectDB(config *Config) *mgo.Session {
 
-	//TODO: connection string should be retrieved from config
-	conn, err := mgo.Dial("mongo")
+	conn, err := mgo.Dial(config.DBConfig.ConnString)
 	if err != nil {
 		log.Fatal("Cannot dial mongo", err)
 	}

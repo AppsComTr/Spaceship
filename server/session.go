@@ -24,6 +24,7 @@ type session struct {
 	pongWaitTime time.Duration
 	writeWaitTime time.Duration
 
+	config *Config
 	conn *websocket.Conn
 
 	receivedMsgDecrement int
@@ -31,7 +32,7 @@ type session struct {
 	pingTimerCas *atomic.Uint32
 }
 
-func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn) Session {
+func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config) Session {
 
 	sessionID := uuid.Must(uuid.NewV4(), nil)
 
@@ -43,14 +44,15 @@ func NewSession(userID string, username string, expiry int64, clientIP string, c
 		clientIP: clientIP,
 		clientPort: clientPort,
 
-		pingPeriodTime: time.Duration(8000) * time.Millisecond,
-		pongWaitTime: time.Duration(10000) * time.Millisecond,
-		writeWaitTime: time.Duration(5000) * time.Millisecond,
+		pingPeriodTime: time.Duration(config.SocketConfig.PingPeriodTime) * time.Millisecond,
+		pongWaitTime: time.Duration(config.SocketConfig.PongWaitTime) * time.Millisecond,
+		writeWaitTime: time.Duration(config.SocketConfig.WriteWaitTime) * time.Millisecond,
 
+		config: config,
 		conn: conn,
 
-		receivedMsgDecrement: 20,
-		pingTimer: time.NewTimer(8*time.Second),
+		receivedMsgDecrement: config.SocketConfig.ReceivedMessageDecrementCount,
+		pingTimer: time.NewTimer(time.Duration(config.SocketConfig.PingPeriodTime) * time.Millisecond),
 		pingTimerCas: atomic.NewUint32(1),
 	}
 
@@ -117,8 +119,7 @@ func (s *session) Consume() {
 
 		s.receivedMsgDecrement--
 		if s.receivedMsgDecrement < 1 {
-			//TODO: this value should be retrieved from config !!!!
-			s.receivedMsgDecrement = 20
+			s.receivedMsgDecrement = s.config.SocketConfig.ReceivedMessageDecrementCount
 			if !s.resetPingTimer(){
 				// We couldn't reset ping timer so there should be an error we need to close the loop
 				return

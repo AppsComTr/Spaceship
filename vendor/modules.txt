@@ -1,5 +1,9 @@
 # cirello.io v1.3.0
 cirello.io/goherokuname
+# github.com/BurntSushi/toml v0.3.1
+github.com/BurntSushi/toml
+# github.com/davecgh/go-spew v1.1.0
+github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
 # github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
@@ -37,6 +41,8 @@ github.com/grpc-ecosystem/grpc-gateway/utilities
 github.com/grpc-ecosystem/grpc-gateway/runtime/internal
 # github.com/huandu/facebook v2.3.1+incompatible
 github.com/huandu/facebook
+# github.com/jinzhu/configor v0.0.0-20180614024415-4edaf76fe188
+github.com/jinzhu/configor
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/satori/go.uuid v1.2.0
@@ -94,3 +100,5 @@ google.golang.org/grpc/balancer/base
 google.golang.org/grpc/credentials/internal
 google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/internal/syscall
+# gopkg.in/yaml.v2 v2.2.1
+gopkg.in/yaml.v2

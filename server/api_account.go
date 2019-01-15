@@ -16,7 +16,7 @@ func (as *Server) AuthenticateFingerprint(context context.Context, request *api.
 		return nil, status.Error(400, err.Error())
 	}
 
-	token, _ := generateToken(user.Id.Hex(), user.Username)
+	token, _ := generateToken(user.Id.Hex(), user.Username, as.config)
 
 	var session api.Session
 	session = api.Session{
@@ -35,7 +35,7 @@ func (as *Server) AuthenticateFacebook(context context.Context, request *api.Aut
 		return nil, status.Error(400, err.Error())
 	}
 
-	token, _ := generateToken(user.Id.Hex(), user.Username)
+	token, _ := generateToken(user.Id.Hex(), user.Username, as.config)
 
 	var session api.Session
 	session = api.Session{
@@ -53,19 +53,17 @@ func (as *Server) TestEcho(context context.Context, empty *empty.Empty) (*api.Se
 	}, nil
 }
 
-func generateToken(userID, username string) (string, int64) {
-	//TODO: Duration parameter should be retrieved from config
-	exp := time.Now().UTC().Add(time.Duration(86400) * time.Second).Unix()
-	return generateTokenWithExpiry(userID, username, exp)
+func generateToken(userID, username string, config *Config) (string, int64) {
+	exp := time.Now().UTC().Add(time.Duration(config.AuthConfig.TokenExpireTime) * time.Second).Unix()
+	return generateTokenWithExpiry(userID, username, exp, config)
 }
 
-func generateTokenWithExpiry(userID, username string, exp int64) (string, int64) {
-	//TODO: Encryption key should be retrieved from config
+func generateTokenWithExpiry(userID, username string, exp int64, config *Config) (string, int64) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"uid": userID,
 		"exp": exp,
 		"usn": username,
 	})
-	signedToken, _ := token.SignedString([]byte("asdasdqweqasdqwwe"))
+	signedToken, _ := token.SignedString([]byte(config.AuthConfig.JWTSecret))
 	return signedToken, exp
 }

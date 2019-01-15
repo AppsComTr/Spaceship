@@ -2,6 +2,8 @@ module spaceship
 
 require (
 	cirello.io v1.3.0
+	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/davecgh/go-spew v1.1.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/golang/protobuf v1.2.0
@@ -11,6 +13,7 @@ require (
 	github.com/gorilla/websocket v1.4.0
 	github.com/grpc-ecosystem/grpc-gateway v1.6.4
 	github.com/huandu/facebook v2.3.1+incompatible
+	github.com/jinzhu/configor v0.0.0-20180614024415-4edaf76fe188
 	github.com/pkg/errors v0.8.1
 	github.com/satori/go.uuid v1.2.0
 	go.uber.org/atomic v1.3.2

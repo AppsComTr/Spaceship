@@ -28,11 +28,13 @@ type Session interface {
 type SessionHolder struct {
 	sync.RWMutex
 	sessions map[uuid.UUID]Session
+	config *Config
 }
 
-func NewSessionHolder() *SessionHolder {
+func NewSessionHolder(config *Config) *SessionHolder {
 	return &SessionHolder{
 		sessions: make(map[uuid.UUID]Session),
+		config: config,
 	}
 }
 
