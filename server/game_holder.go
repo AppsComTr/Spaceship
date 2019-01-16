@@ -1,32 +1,39 @@
 package server
 
-import "sync"
+import (
+	"github.com/satori/go.uuid"
+	"sync"
+)
 
-type Game interface {
+type GameController interface {
 	GetName() string
-	Start(session Session) error
+	Create() uuid.UUID
+	Join(gameID uuid.UUID, session Session) error
+	Leave(gameID uuid.UUID, session Session) error
+	Update()
+	GetGameSpecs() GameSpecs
 }
 
 type GameHolder struct {
 	sync.RWMutex
-	games map[string]Game
+	games map[string]GameController
 }
 
 func NewGameHolder() *GameHolder {
 	return &GameHolder{
-		games: make(map[string]Game),
+		games: make(map[string]GameController),
 	}
 }
 
-func (r *GameHolder) Get(gameName string) Game {
-	var g Game
+func (r *GameHolder) Get(gameName string) GameController {
+	var g GameController
 	r.RLock()
 	g = r.games[gameName]
 	r.RUnlock()
 	return g
 }
 
-func (r *GameHolder) Add(g Game) {
+func (r *GameHolder) Add(g GameController) {
 	r.Lock()
 	r.games[g.GetName()] = g
 	r.Unlock()

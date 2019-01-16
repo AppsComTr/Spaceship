@@ -39,7 +39,7 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 			}}})
 		}else{
 
-			game.Start(session)
+			game.Create()
 
 		}
 		break

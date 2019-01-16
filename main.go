@@ -55,5 +55,4 @@ func main()  {
 
 func initGames(holder *server.GameHolder) {
 	holder.Add(&game.TestGame{})
-	holder.Add(&game.TestSecondGame{})
 }
