@@ -36,6 +36,14 @@ type Server struct {
 	gameHolder *GameHolder
 }
 
+func (s *Server) Stop() {
+	if err := s.grpcGatewayServer.Shutdown(context.Background()); err != nil {
+		log.Println("Couldn't shutdown grpc gateway server")
+	}
+
+	s.grpcServer.GracefulStop()
+}
+
 func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline) *Server {
 
 	port := config.Port

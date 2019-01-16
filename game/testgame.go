@@ -12,7 +12,7 @@ func (tg *TestGame) GetName() string {
 	return "testGame"
 }
 
-func (tg *TestGame) Start(session *server.Session) error {
+func (tg *TestGame) Start(session server.Session) error {
 
 	log.Println("testGame start")
 

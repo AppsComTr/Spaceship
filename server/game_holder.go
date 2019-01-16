@@ -4,7 +4,7 @@ import "sync"
 
 type Game interface {
 	GetName() string
-	Start(session *Session) error
+	Start(session Session) error
 }
 
 type GameHolder struct {

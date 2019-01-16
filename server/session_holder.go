@@ -17,7 +17,7 @@ type Session interface {
 
 	Expiry() int64
 	//Consume(func(session Session, envelope *rtapi.Envelope) bool)
-	Consume()
+	Consume(func(session Session, envelope *socketapi.Envelope) bool)
 
 	Send(isStream bool, mode uint8, envelope *socketapi.Envelope) error
 	SendBytes(isStream bool, mode uint8, payload []byte) error

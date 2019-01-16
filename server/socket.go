@@ -58,13 +58,13 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder 
 			return
 		}
 
-		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler)
+		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, sessionHolder, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler)
 
 		log.Println("New socket connection was established id: " + s.ID().String())
 
 		sessionHolder.add(s)
 
-		s.Consume()
+		s.Consume(pipeline.handleSocketRequests)
 
 	}
 }

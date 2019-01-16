@@ -32,21 +32,28 @@ func main()  {
 	}
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder()
-	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler)
+	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder)
 
 	initGames(gameHolder)
 
-	_ = server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline)
+	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline)
 
-	c := make(chan os.Signal, 2)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
 	log.Println("Startup was completed")
 
 	<-c
 
+	log.Println("Shutdown was started")
+	server.Stop()
+	log.Println("Shutdown was completed")
+
+	os.Exit(1)
+
 }
 
 func initGames(holder *server.GameHolder) {
 	holder.Add(&game.TestGame{})
+	holder.Add(&game.TestSecondGame{})
 }
