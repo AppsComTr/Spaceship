@@ -25,6 +25,11 @@ message Envelope {
 
 }
 
+message MatchUpdate {
+    string sessionID = 1;
+
+}
+
 // A logical error which may occur on the server.
 message Error {
     // The selection of possible error codes.
