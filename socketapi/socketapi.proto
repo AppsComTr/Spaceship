@@ -21,13 +21,15 @@ message Envelope {
     oneof message {
         Error error = 2;
         MatchStart match_start = 3;
+        MatchUpdate match_update = 4;
     }
-
 }
 
 message MatchUpdate {
-    string sessionID = 1;
-
+    string gameID = 1;
+    //TODO: this can be retrieved from gameID by fetching game from redis but does it cause unnecessary load on the redis ?
+    string gameName = 2;
+    string metadata = 3;
 }
 
 // A logical error which may occur on the server.
@@ -50,6 +52,8 @@ message Error {
         RUNTIME_FUNCTION_NOT_FOUND = 6;
         // The runtime function executed with an error.
         RUNTIME_FUNCTION_EXCEPTION = 7;
+        // Generic not found error code
+        NOT_FOUND = 8;
     }
 
     // The error code which should be one of "Error.Code" enums.

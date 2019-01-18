@@ -1,16 +1,15 @@
 package server
 
 import (
-	"github.com/satori/go.uuid"
 	"sync"
 )
 
 type GameController interface {
 	GetName() string
-	Create() uuid.UUID
-	Join(gameID uuid.UUID, session Session) error
-	Leave(gameID uuid.UUID, session Session) error
-	Update()
+	Init(gameData *GameData) error
+	Join(gameID string, session Session) error
+	Leave(gameID string, session Session) error
+	Update(gameData *GameData, session Session, metadata string) error
 	GetGameSpecs() GameSpecs
 }
 
