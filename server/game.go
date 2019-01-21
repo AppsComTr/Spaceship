@@ -1,6 +1,8 @@
 package server
 
 import (
+	"errors"
+	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
 	"spaceship/socketapi"
 	"time"
@@ -17,66 +19,45 @@ type GameSpecs struct {
 	Mode int
 }
 
-type GameData struct {
-	ID string
-	Name string
-	Metadata string
-	CreatedAt int64
-	UpdatedAt int64
-}
-
-func (gd GameData) GetID() string {
-	return gd.ID
-}
-
-func (gd GameData) GetName() string {
-	return gd.Name
-}
-
-func (gd GameData) GetCreatedAt() int64 {
-	return gd.CreatedAt
-}
-
-func (gd GameData) GetUpdatedAt() int64 {
-	return gd.UpdatedAt
-}
-
-func (gd *GameData) SetID(id string) {
-	gd.ID = id
-}
-
-func (gd *GameData) SetName(gameName string){
-	gd.Name = gameName
-}
-
-func (gd *GameData) SetCreatedAt(createdAt int64) {
-	gd.CreatedAt = createdAt
-}
-
 //This should be used in matchmaker module
-func NewGame(modeName string, fn func(gameData *GameData) error) (*GameData, error) {
-	gameData := &GameData{
-		ID: uuid.NewV4().String(),
+func NewGame(modeName string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
+	gameData := &socketapi.GameData{
+		Id: uuid.NewV4().String(),
 		Name: modeName,
 		CreatedAt: time.Now().Unix(),
 	}
 
-	err := fn(gameData)
+	game := holder.Get(modeName)
+
+	if game == nil {
+		return nil, errors.New("Game couldn't found with given mode name")
+	}
+
+	err := game.Init(gameData)
 
 	if err != nil {
 		return nil, err
 	}
 
-	//TODO: we should save game to redis. But I don't know should we save it in here or should we do it on another layer ?
+	gameDataS, err := holder.jsonProtoMarshler.MarshalToString(gameData)
+	if err != nil {
+		return nil, err
+	}
+
+	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
+
+	if err != nil {
+		return nil, err
+	}
 
 	return gameData, nil
 }
 
-func UpdateGame(session Session, updateData *socketapi.MatchUpdate, fn func(gameData *GameData, session Session, metadata string) error) (*GameData, error) {
+func UpdateGame(session Session, updateData *socketapi.MatchUpdate, fn func(gameData *socketapi.GameData, session Session, metadata string) error) (*socketapi.GameData, error) {
 
 	//TODO: we should fetch the game from redis with id in updateData, I'll user dummy for now
-	gameData := &GameData{
-		ID: uuid.NewV4().String(),
+	gameData := &socketapi.GameData{
+		Id: uuid.NewV4().String(),
 		Name: "atatat",
 		CreatedAt: time.Now().Unix(),
 	}

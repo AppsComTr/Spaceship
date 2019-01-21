@@ -34,7 +34,7 @@ func main()  {
 	redis := redisConnect(config)
 
 	sessionHolder := server.NewSessionHolder(config)
-	gameHolder := server.NewGameHolder()
+	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, matchmaker)
 

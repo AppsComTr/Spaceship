@@ -2,6 +2,7 @@ package game
 
 import (
 	"spaceship/server"
+	"spaceship/socketapi"
 )
 
 type TestGame struct {}
@@ -21,7 +22,7 @@ func (tg *TestGame) GetName() string {
 	return "testGame"
 }
 
-func (tg *TestGame) Init(gameData *server.GameData) error {
+func (tg *TestGame) Init(gameData *socketapi.GameData) error {
 
 	gameData.Metadata = "atatat"
 
@@ -39,7 +40,7 @@ func (tg *TestGame) Leave(gameID string, session server.Session) error {
 }
 
 //Users should create their own metadata format. Ex: json string
-func (tg *TestGame) Update(gameData *server.GameData, session server.Session, metadata string) error {
+func (tg *TestGame) Update(gameData *socketapi.GameData, session server.Session, metadata string) error {
 
 	return nil
 }

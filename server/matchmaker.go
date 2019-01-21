@@ -64,6 +64,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			MaxCount: int32(playerCount),
 			ActiveCount: 1,
 			Users: users,
+			GameName: gameName,
 		}
 
 		err = m.redis.Do(radix.Cmd(nil, "LPUSH", queueKey, matchID))
@@ -120,11 +121,11 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 	defer m.RUnlock()
 
 	game := "Passive"
-	gameObject := "XXXX"
+	gameID := ""
 
 	matchEntry, ok := m.entries[matchID]
 	if !ok {
-		return gameObject, errors.New("MatchID not found!")
+		return gameID, errors.New("MatchID not found!")
 	}
 
 	if game == "Passive" {
@@ -132,15 +133,21 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 			//game.create
-			gameObject = uuid.NewV4().String()
-			matchEntry.Game = gameObject
+			gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
+			gameID = gameObject.Id
+
+			if err != nil {
+				return "", err
+			}
+
+			matchEntry.Game = gameObject.Id
 			matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
 			m.entries[matchID] = matchEntry
 
 			break
 		case int32(socketapi.MatchEntry_GAME_CREATED):
 			//TODO need to store users join status for more than 2 user gameplay
-			gameObject = matchEntry.Game
+			gameID = matchEntry.Game
 			delete(m.entries, matchID)// only clear when last player joined
 			break
 		}
@@ -156,7 +163,7 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 
 	}
 
-	return gameObject,nil
+	return gameID,nil
 }
 
 func (m *LocalMatchmaker) Leave(session Session, matchID string) error{

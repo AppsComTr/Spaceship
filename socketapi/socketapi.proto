@@ -102,4 +102,14 @@ message MatchEntry {
     string game = 5;
 
     repeated MatchUser users = 6;
+
+    string gameName = 7;
+}
+
+message GameData {
+    string id = 1;
+    string name = 2;
+    string metadata = 3;
+    int64 createdAt = 4;
+    int64 updatedAt = 5;
 }
