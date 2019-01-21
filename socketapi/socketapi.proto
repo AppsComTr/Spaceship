@@ -22,6 +22,10 @@ message Envelope {
         Error error = 2;
         MatchStart match_start = 3;
         MatchUpdate match_update = 4;
+        MatchFind match_find = 5;
+        MatchJoin match_join = 6;
+        MatchLeave match_leave = 7;
+        MatchEntry match_entry = 8;
     }
 }
 
@@ -66,4 +70,36 @@ message Error {
 
 message MatchStart {
     string game_name = 1;
+}
+
+message MatchFind {
+    string game_name = 1;
+    map<string, string> queue_properties = 2;
+}
+
+message MatchJoin {
+    string match_id = 1;
+}
+
+message MatchLeave {
+    string match_id = 1;
+}
+
+message MatchEntry {
+    enum State {
+        MATCH_FINDING_PLAYERS = 0;
+        GAME_CREATED = 1;
+    }
+    message MatchUser {
+        string user_id = 1;
+    }
+
+    string match_id = 1;
+    int32 state = 2;
+
+    int32 max_count = 3;
+    int32 active_count = 4;
+    string game = 5;
+
+    repeated MatchUser users = 6;
 }

@@ -9,6 +9,7 @@ import (
 	"spaceship/game"
 	"spaceship/server"
 	"syscall"
+	"github.com/mediocregopher/radix/v3"
 )
 
 var (
@@ -30,9 +31,12 @@ func main()  {
 	if err != nil {
 		log.Panicln("Error while reading configurations from config.yml")
 	}
+	redis := redisConnect(config)
+
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder()
-	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
+	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, matchmaker)
 
 	initGames(gameHolder)
 
@@ -55,4 +59,13 @@ func main()  {
 
 func initGames(holder *server.GameHolder) {
 	holder.Add(&game.TestGame{})
+}
+
+
+func redisConnect(config *server.Config) *radix.Pool{
+	redisPool, err := radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
+	if err != nil {
+		log.Fatalln("Redis Connection Failed", err)
+	}
+	return redisPool
 }

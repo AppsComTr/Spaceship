@@ -9,14 +9,16 @@ import (
 type Pipeline struct {
 	config *Config
 	gameHolder *GameHolder
+	matchmaker Matchmaker
 	jsonProtoMarshler *jsonpb.Marshaler
 	jsonProtoUnmarshler *jsonpb.Unmarshaler
 }
 
-func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder) *Pipeline {
+func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, matchmaker Matchmaker) *Pipeline {
 	return &Pipeline{
 		config: config,
 		gameHolder: gameHolder,
+		matchmaker: matchmaker,
 		jsonProtoMarshler: jsonProtoMarshler,
 		jsonProtoUnmarshler: jsonProtoUnmarshler,
 	}
@@ -68,6 +70,12 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 		}
 
 		break
+	case *socketapi.Envelope_MatchFind:
+		p.matchmakerFind(session, envelope)
+	case *socketapi.Envelope_MatchJoin:
+		p.matchmakerJoin(session, envelope)
+	case *socketapi.Envelope_MatchLeave:
+		p.matchmakerLeave(session, envelope)
 	default:
 		// If we reached this point the envelope was valid but the contents are missing or unknown.
 		// Usually caused by a version mismatch, and should cause the session making this pipeline request to close.
