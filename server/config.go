@@ -11,6 +11,9 @@ type Config struct {
 	DBConfig struct{
 		ConnString string `default:"mongo"`
 	}
+	RedisConfig struct{
+		ConnString string `default:"redis"`
+	}
 	AuthConfig struct{
 		JWTSecret string `default:"asdasdqweqasdqwwe"`
 		TokenExpireTime int `default:"86400"`

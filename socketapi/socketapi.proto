@@ -21,13 +21,19 @@ message Envelope {
     oneof message {
         Error error = 2;
         MatchStart match_start = 3;
+        MatchUpdate match_update = 4;
+        MatchFind match_find = 5;
+        MatchJoin match_join = 6;
+        MatchLeave match_leave = 7;
+        MatchEntry match_entry = 8;
     }
-
 }
 
 message MatchUpdate {
-    string sessionID = 1;
-
+    string gameID = 1;
+    //TODO: this can be retrieved from gameID by fetching game from redis but does it cause unnecessary load on the redis ?
+    string gameName = 2;
+    string metadata = 3;
 }
 
 // A logical error which may occur on the server.
@@ -50,6 +56,8 @@ message Error {
         RUNTIME_FUNCTION_NOT_FOUND = 6;
         // The runtime function executed with an error.
         RUNTIME_FUNCTION_EXCEPTION = 7;
+        // Generic not found error code
+        NOT_FOUND = 8;
     }
 
     // The error code which should be one of "Error.Code" enums.
@@ -62,4 +70,46 @@ message Error {
 
 message MatchStart {
     string game_name = 1;
+}
+
+message MatchFind {
+    string game_name = 1;
+    map<string, string> queue_properties = 2;
+}
+
+message MatchJoin {
+    string match_id = 1;
+}
+
+message MatchLeave {
+    string match_id = 1;
+}
+
+message MatchEntry {
+    enum State {
+        MATCH_FINDING_PLAYERS = 0;
+        GAME_CREATED = 1;
+    }
+    message MatchUser {
+        string user_id = 1;
+    }
+
+    string match_id = 1;
+    int32 state = 2;
+
+    int32 max_count = 3;
+    int32 active_count = 4;
+    string game = 5;
+
+    repeated MatchUser users = 6;
+
+    string gameName = 7;
+}
+
+message GameData {
+    string id = 1;
+    string name = 2;
+    string metadata = 3;
+    int64 createdAt = 4;
+    int64 updatedAt = 5;
 }

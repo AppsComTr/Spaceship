@@ -1,32 +1,47 @@
 package server
 
-import "sync"
+import (
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/mediocregopher/radix/v3"
+	"spaceship/socketapi"
+	"sync"
+)
 
-type Game interface {
+type GameController interface {
 	GetName() string
-	Start(session Session) error
+	Init(gameData *socketapi.GameData) error
+	Join(gameID string, session Session) error
+	Leave(gameID string, session Session) error
+	Update(gameData *socketapi.GameData, session Session, metadata string) error
+	GetGameSpecs() GameSpecs
 }
 
 type GameHolder struct {
 	sync.RWMutex
-	games map[string]Game
+	games map[string]GameController
+	redis *radix.Pool
+	jsonProtoMarshler *jsonpb.Marshaler
+	jsonProtoUnmarshler *jsonpb.Unmarshaler
 }
 
-func NewGameHolder() *GameHolder {
+func NewGameHolder(redis *radix.Pool, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler) *GameHolder {
 	return &GameHolder{
-		games: make(map[string]Game),
+		games: make(map[string]GameController),
+		redis: redis,
+		jsonProtoMarshler: jsonpbMarshler,
+		jsonProtoUnmarshler: jsonpbUnmarshaler,
 	}
 }
 
-func (r *GameHolder) Get(gameName string) Game {
-	var g Game
+func (r *GameHolder) Get(gameName string) GameController {
+	var g GameController
 	r.RLock()
-	g = r.games[gameName]
+	g := r.games[gameName]
 	r.RUnlock()
 	return g
 }
 
-func (r *GameHolder) Add(g Game) {
+func (r *GameHolder) Add(g GameController) {
 	r.Lock()
 	r.games[g.GetName()] = g
 	r.Unlock()

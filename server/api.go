@@ -67,7 +67,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		gameHolder: gameHolder,
 	}
 
-	db := connectDB(config)
+	db := connectDB(config) //TODO: must be parameter
 	s.db = db
 
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)
