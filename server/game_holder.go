@@ -36,7 +36,7 @@ func NewGameHolder(redis *radix.Pool, jsonpbMarshler *jsonpb.Marshaler, jsonpbUn
 func (r *GameHolder) Get(gameName string) GameController {
 	var g GameController
 	r.RLock()
-	g := r.games[gameName]
+	g = r.games[gameName]
 	r.RUnlock()
 	return g
 }

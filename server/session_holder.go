@@ -29,12 +29,14 @@ type Session interface {
 type SessionHolder struct {
 	sync.RWMutex
 	sessions map[uuid.UUID]Session
+	sessionsPerUserID map[string]Session
 	config *Config
 }
 
 func NewSessionHolder(config *Config) *SessionHolder {
 	return &SessionHolder{
 		sessions: make(map[uuid.UUID]Session),
+		sessionsPerUserID: make(map[string]Session),
 		config: config,
 	}
 }
@@ -49,14 +51,25 @@ func (r *SessionHolder) Get(sessionID uuid.UUID) Session {
 	return s
 }
 
+func (r *SessionHolder) GetByUserID(userID string) Session {
+	var s Session
+	r.RLock()
+	s = r.sessionsPerUserID[userID]
+	r.RUnlock()
+	return s
+}
+
 func (r *SessionHolder) add(s Session) {
 	r.Lock()
 	r.sessions[s.ID()] = s
+	r.sessionsPerUserID[s.UserID()] = s
 	r.Unlock()
 }
 
 func (r *SessionHolder) remove(sessionID uuid.UUID) {
 	r.Lock()
+	s := r.sessions[sessionID]
+	delete(r.sessionsPerUserID, s.UserID())
 	delete(r.sessions, sessionID)
 	r.Unlock()
 }
