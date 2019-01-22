@@ -10,15 +10,17 @@ type Pipeline struct {
 	config *Config
 	gameHolder *GameHolder
 	matchmaker Matchmaker
+	sessionHolder *SessionHolder
 	jsonProtoMarshler *jsonpb.Marshaler
 	jsonProtoUnmarshler *jsonpb.Unmarshaler
 }
 
-func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, matchmaker Matchmaker) *Pipeline {
+func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker) *Pipeline {
 	return &Pipeline{
 		config: config,
 		gameHolder: gameHolder,
 		matchmaker: matchmaker,
+		sessionHolder: sessionHolder,
 		jsonProtoMarshler: jsonProtoMarshler,
 		jsonProtoUnmarshler: jsonProtoUnmarshler,
 	}
@@ -59,7 +61,7 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 			}}})
 		}
 
-		_, err := UpdateGame(session, message, gameController.Update)
+		_, err := UpdateGame(p.gameHolder, session, p, message)
 
 		if err != nil {
 			log.Println("Error occured while updating game state", err)

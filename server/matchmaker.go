@@ -134,11 +134,10 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 			//game.create
 			gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
-			gameID = gameObject.Id
-
 			if err != nil {
 				return "", err
 			}
+			gameID = gameObject.Id
 
 			matchEntry.Game = gameObject.Id
 			matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
@@ -161,6 +160,12 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 
 	}else if game == "realtime" {
 
+	}
+
+	//We should trigger relevant game controllers methods
+	_, err := JoinGame(matchEntry.Game, m.gameHolder, session)
+	if err != nil {
+		return "", err
 	}
 
 	return gameID,nil

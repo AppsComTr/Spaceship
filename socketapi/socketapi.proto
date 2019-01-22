@@ -26,14 +26,18 @@ message Envelope {
         MatchJoin match_join = 6;
         MatchLeave match_leave = 7;
         MatchEntry match_entry = 8;
+        GameData game_data = 9;
+        MatchUpdateResp match_update_resp = 10;
     }
 }
 
 message MatchUpdate {
     string gameID = 1;
-    //TODO: this can be retrieved from gameID by fetching game from redis but does it cause unnecessary load on the redis ?
-    string gameName = 2;
-    string metadata = 3;
+    string metadata = 2;
+}
+
+message MatchUpdateResp {
+    GameData game_data = 1;
 }
 
 // A logical error which may occur on the server.
@@ -112,4 +116,6 @@ message GameData {
     string metadata = 3;
     int64 createdAt = 4;
     int64 updatedAt = 5;
+    string modeName = 6;
+    repeated string userIDs = 7;
 }

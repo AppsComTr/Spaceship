@@ -5,6 +5,7 @@ import (
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
 	"spaceship/socketapi"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,8 @@ func NewGame(modeName string, holder *GameHolder, session Session) (*socketapi.G
 		return nil, errors.New("Game couldn't found with given mode name")
 	}
 
+	gameData.ModeName = game.GetName()
+
 	err := game.Init(gameData)
 
 	if err != nil {
@@ -45,7 +48,6 @@ func NewGame(modeName string, holder *GameHolder, session Session) (*socketapi.G
 	}
 
 	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
-
 	if err != nil {
 		return nil, err
 	}
@@ -53,25 +55,101 @@ func NewGame(modeName string, holder *GameHolder, session Session) (*socketapi.G
 	return gameData, nil
 }
 
-func UpdateGame(session Session, updateData *socketapi.MatchUpdate, fn func(gameData *socketapi.GameData, session Session, metadata string) error) (*socketapi.GameData, error) {
+func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
+	gameData := &socketapi.GameData{}
 
-	//TODO: we should fetch the game from redis with id in updateData, I'll user dummy for now
-	gameData := &socketapi.GameData{
-		Id: uuid.NewV4().String(),
-		Name: "atatat",
-		CreatedAt: time.Now().Unix(),
+	var gameDataS string
+
+	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", gameID))
+	if err != nil {
+		return nil, err
 	}
 
-	err := fn(gameData, session, updateData.Metadata)
+	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), gameData)
+	if err != nil {
+		return nil, err
+	}
 
+	game := holder.Get(gameData.ModeName)
+	if game == nil {
+		return nil, errors.New("Game couldn't found with given mode name")
+	}
+
+	//Check if user is already joined to this game
+	userExists := false
+	for _, userID := range gameData.UserIDs {
+		if userID == session.UserID() {
+			userExists = true
+			break
+		}
+	}
+	if userExists {
+		return nil, errors.New("This user already joined to this game")
+	}
+
+	gameData.UserIDs = append(gameData.UserIDs, session.UserID())
+
+	err = game.Join(gameData, session)
 	if err != nil {
 		return nil, err
 	}
 
 	gameData.UpdatedAt = time.Now().Unix()
 
-	//TODO: again we should save
-	//TODO: and we should also broadcast to updated data to users of this game
+	gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
+	if err != nil {
+		return nil, err
+	}
+
+	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
+	if err != nil {
+		return nil, err
+	}
+
+	//TODO: maybe we need to broadcast join data to inform clients
+	return gameData, nil
+}
+
+func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.MatchUpdate) (*socketapi.GameData, error) {
+
+	gameData := &socketapi.GameData{}
+
+	var gameDataS string
+
+	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", updateData.GameID))
+	if err != nil {
+		return nil, err
+	}
+
+	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), gameData)
+	if err != nil {
+		return nil, err
+	}
+
+	game := holder.Get(gameData.ModeName)
+	if game == nil {
+		return nil, errors.New("Game couldn't found with given mode name")
+	}
+
+	err = game.Update(gameData, session, updateData.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	gameData.UpdatedAt = time.Now().Unix()
+
+	gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
+	if err != nil {
+		return nil, err
+	}
+
+	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline.broadcastGame(gameData)
+
 	return gameData, nil
 
 }
