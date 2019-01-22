@@ -29,15 +29,15 @@ func (tg *TestGame) Init(gameData *socketapi.GameData) error {
 	return nil
 }
 
-func (tg *TestGame) Join(gameID string, session server.Session) error {
+func (tg *TestGame) Join(gameData *socketapi.GameData, session server.Session) error {
 
 	return nil
 }
 
-func (tg *TestGame) Leave(gameID string, session server.Session) error {
-
-	return nil
-}
+//func (tg *TestGame) Leave(gameID string, session server.Session) error {
+//
+//	return nil
+//}
 
 //Users should create their own metadata format. Ex: json string
 func (tg *TestGame) Update(gameData *socketapi.GameData, session server.Session, metadata string) error {

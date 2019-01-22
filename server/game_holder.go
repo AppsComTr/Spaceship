@@ -11,7 +11,7 @@ type GameController interface {
 	GetName() string
 	Init(gameData *socketapi.GameData) error
 	Join(gameData *socketapi.GameData, session Session) error
-	Leave(gameID string, session Session) error
+	//Leave(gameData *socketapi.GameData, session Session) error
 	Update(gameData *socketapi.GameData, session Session, metadata string) error
 	GetGameSpecs() GameSpecs
 }

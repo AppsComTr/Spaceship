@@ -20,7 +20,6 @@ message Envelope {
     string cid = 1;
     oneof message {
         Error error = 2;
-        MatchStart match_start = 3;
         MatchUpdate match_update = 4;
         MatchFind match_find = 5;
         MatchJoin match_join = 6;
@@ -70,10 +69,6 @@ message Error {
     string message = 2;
     // Additional error details which may be different for each response.
     map<string, string> context = 3;
-}
-
-message MatchStart {
-    string game_name = 1;
 }
 
 message MatchFind {

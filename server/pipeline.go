@@ -51,15 +51,6 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 	case *socketapi.Envelope_MatchUpdate:
 
 		message := envelope.GetMatchUpdate()
-		gameController := p.gameHolder.Get(message.GameName)
-
-		if gameController == nil {
-			log.Println("Game controller couldn't find with given game name", envelope)
-			_ = session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
-				Code:    int32(socketapi.Error_BAD_INPUT),
-				Message: "Game controller couldn't find with given game name",
-			}}})
-		}
 
 		_, err := UpdateGame(p.gameHolder, session, p, message)
 
@@ -67,7 +58,7 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 			log.Println("Error occured while updating game state", err)
 			_ = session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 				Code: int32(socketapi.Error_RUNTIME_EXCEPTION),
-				Message: "Error occured while updating game state",
+				Message: "Error occured while updating game state: " + err.Error(),
 			}}})
 		}
 
