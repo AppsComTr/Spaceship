@@ -20,6 +20,7 @@ message Envelope {
     string cid = 1;
     oneof message {
         Error error = 2;
+        MatchStart match_start = 3;
         MatchUpdate match_update = 4;
         MatchFind match_find = 5;
         MatchJoin match_join = 6;
@@ -78,6 +79,10 @@ message MatchFind {
 
 message MatchJoin {
     string match_id = 1;
+}
+
+message MatchStart {
+    GameData game_data = 1;
 }
 
 message MatchLeave {

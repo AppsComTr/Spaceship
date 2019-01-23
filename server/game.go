@@ -22,6 +22,7 @@ type GameSpecs struct {
 
 //This should be used in matchmaker module
 func NewGame(modeName string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
+	//TODO: We should start lock over redis at here
 	gameData := &socketapi.GameData{
 		Id: uuid.NewV4().String(),
 		Name: modeName,
@@ -56,6 +57,7 @@ func NewGame(modeName string, holder *GameHolder, session Session) (*socketapi.G
 }
 
 func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
+	//TODO: We should start lock over redis at here
 	gameData := &socketapi.GameData{}
 
 	var gameDataS string
@@ -169,6 +171,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 
 func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.MatchUpdate) (*socketapi.GameData, error) {
 
+	//TODO: We should start lock over redis at here
 	gameData := &socketapi.GameData{}
 
 	var gameDataS string

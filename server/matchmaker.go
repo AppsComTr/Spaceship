@@ -13,7 +13,7 @@ import (
 
 type Matchmaker interface {
 	Find(session Session,gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error)
-	Join(session Session, matchID string) (string, error)
+	Join(session Session, matchID string) (*socketapi.GameData, error)
 	Leave(session Session, matchID string) error
 }
 
@@ -34,8 +34,8 @@ func NewLocalMatchMaker(redis *radix.Pool, gameHolder *GameHolder) Matchmaker {
 }
 
 func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error){
-	m.RLock() //TODO lock must be applied on Game Queue Key!
-	defer m.RUnlock()
+	m.Lock() //TODO lock must be applied on Game Queue Key!
+	defer m.Unlock()
 
 	queueKey := m.generateQueueKey(gameName, queueProperties)
 	playerCount, err := strconv.Atoi(queueProperties["player_count"])
@@ -116,16 +116,15 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 	}
 }
 
-func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
-	m.RLock() //TODO lock must be applied on matchID Key!
-	defer m.RUnlock()
+func (m *LocalMatchmaker) Join(session Session, matchID string) (*socketapi.GameData,error){
+	m.Lock() //TODO lock must be applied on matchID Key!
+	defer m.Unlock()
 
 	game := "Passive"
-	gameID := ""
 
 	matchEntry, ok := m.entries[matchID]
 	if !ok {
-		return gameID, errors.New("MatchID not found!")
+		return nil, errors.New("MatchID not found!")
 	}
 
 	if game == "Passive" {
@@ -135,9 +134,8 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 			//game.create
 			gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			gameID = gameObject.Id
 
 			matchEntry.Game = gameObject.Id
 			matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
@@ -146,7 +144,6 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 			break
 		case int32(socketapi.MatchEntry_GAME_CREATED):
 			//TODO need to store users join status for more than 2 user gameplay
-			gameID = matchEntry.Game
 			delete(m.entries, matchID)// only clear when last player joined
 			break
 		}
@@ -163,12 +160,12 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (string,error){
 	}
 
 	//We should trigger relevant game controllers methods
-	_, err := JoinGame(matchEntry.Game, m.gameHolder, session)
+	gameData, err := JoinGame(matchEntry.Game, m.gameHolder, session)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return gameID,nil
+	return gameData,nil
 }
 
 func (m *LocalMatchmaker) Leave(session Session, matchID string) error{

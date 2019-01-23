@@ -144,7 +144,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		if err != nil {
 			log.Fatal("Error while creating listener for gateway server", err)
 		}
-		if err := s.grpcGatewayServer.Serve(listener); err != nil {
+		if err := s.grpcGatewayServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Fatal("Error while serving gRPC gateway server", err)
 		}
 	}()
