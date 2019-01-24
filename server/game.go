@@ -24,7 +24,7 @@ type GameSpecs struct {
 //This should be used in matchmaker module
 func NewGame(matchID string, modeName string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
 	gameData := &socketapi.GameData{
-		Id: matchID,
+		Id: "game-" + matchID,
 		Name: modeName,
 		CreatedAt: time.Now().Unix(),
 	}
@@ -48,7 +48,7 @@ func NewGame(matchID string, modeName string, holder *GameHolder, session Sessio
 		return nil, err
 	}
 
-	err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameData.Id, gameDataS))
+	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
 	if err != nil {
 		return nil, err
 	}
@@ -57,12 +57,11 @@ func NewGame(matchID string, modeName string, holder *GameHolder, session Sessio
 }
 
 func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
-	//TODO: We should start lock over redis at here
 	gameData := &socketapi.GameData{}
 
 	var gameDataS string
 
-	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + gameID))
+	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", gameID))
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +102,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 		return nil, err
 	}
 
-	err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameData.Id, gameDataS))
+	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +174,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 	var gameDataS string
 
-	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + updateData.GameID))
+	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", updateData.GameID))
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +210,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 			return nil, err
 		}
 
-		err = holder.redis.Do(radix.Cmd(nil, "DEL", "game-" + gameData.Id))
+		err = holder.redis.Do(radix.Cmd(nil, "DEL", gameData.Id))
 		if err != nil {
 			log.Println(err)
 		}
@@ -223,7 +222,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 			return nil, err
 		}
 
-		err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameData.Id, gameDataS))
+		err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
 		if err != nil {
 			return nil, err
 		}
