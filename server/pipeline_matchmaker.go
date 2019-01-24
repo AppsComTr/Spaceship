@@ -35,7 +35,7 @@ func (p *Pipeline) matchmakerJoin(session Session, envelope *socketapi.Envelope)
 
 	ms := socketapi.MatchStart{GameData: game}
 	session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_MatchStart{MatchStart:&ms}})
-	log.Println("matchmakerFind received for game: ", incomingData.MatchId)
+	log.Println("matchmakerJoin received for game: ", incomingData.MatchId)
 }
 
 func (p *Pipeline) matchmakerLeave(session Session, envelope *socketapi.Envelope){

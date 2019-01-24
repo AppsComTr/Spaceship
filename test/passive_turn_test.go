@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"spaceship/socketapi"
 	"testing"
-	"time"
 )
 
 func TestPassiveGame(t *testing.T){
@@ -83,10 +82,6 @@ func TestPassiveGame(t *testing.T){
 			return
 		}
 
-		//TODO: because of two client start as parallel processes, sometimes users can join and update the game same time.
-		// So we should use lock mechanism that locks every single method of game logic
-		// For now, I solved the problem with sleep.
-		time.Sleep(time.Millisecond*500)
 		//Send match update data
 		matchUpdateData := PTGameUpdateData{
 			FoundWordsLength: 150,

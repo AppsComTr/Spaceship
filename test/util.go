@@ -43,7 +43,7 @@ func NewServer(t *testing.T) (*server.Server) {
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonpbMarshaler, jsonpbUnmarshaler)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
-	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db)
+	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	gameHolder.Add(&PTGame{})
 
@@ -136,12 +136,22 @@ func ReadMessage(failChan chan string, onMessageChan chan []byte) (socketapi.Env
 	return env
 }
 
-func redisConnect(t *testing.T, config *server.Config) *radix.Pool{
-	redisPool, err := radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
-	if err != nil {
-		t.Fatal("Redis Connection Failed", err)
+func redisConnect(t *testing.T, config *server.Config) radix.Client{
+	var redisClient radix.Client
+	var err error
+
+	if config.RedisConfig.CluesterEnabled {
+		redisClient, err = radix.NewCluster([]string{config.RedisConfig.ConnString})
+		if err != nil {
+			t.Fatal("Redis Connection Failed", err)
+		}
+	}else{
+		redisClient, err = radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
+		if err != nil {
+			t.Fatal("Redis Connection Failed", err)
+		}
 	}
-	return redisPool
+	return redisClient
 }
 
 func generateUUID() string {
