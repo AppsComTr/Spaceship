@@ -44,7 +44,7 @@ func (s *Server) Stop() {
 	s.grpcServer.GracefulStop()
 }
 
-func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline) *Server {
+func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, db *mgo.Session) *Server {
 
 	port := config.Port
 
@@ -65,10 +65,8 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		grpcServer: grpcServer,
 		config: config,
 		gameHolder: gameHolder,
+		db: db,
 	}
-
-	db := connectDB(config) //TODO: must be parameter
-	s.db = db
 
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)
 
@@ -221,7 +219,7 @@ func parseToken(hmacSecretByte []byte, tokenString string) (userID string, usern
 	return userID, claims["usn"].(string), int64(claims["exp"].(float64)), true
 }
 
-func connectDB(config *Config) *mgo.Session {
+func ConnectDB(config *Config) *mgo.Session {
 
 	conn, err := mgo.Dial(config.DBConfig.ConnString)
 	if err != nil {

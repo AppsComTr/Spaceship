@@ -12,7 +12,8 @@ type GameController interface {
 	Init(gameData *socketapi.GameData) error
 	Join(gameData *socketapi.GameData, session Session) error
 	//Leave(gameData *socketapi.GameData, session Session) error
-	Update(gameData *socketapi.GameData, session Session, metadata string) error
+	//Should return true if game is finished, so framework can remove gamedata from redis and store it in db
+	Update(gameData *socketapi.GameData, session Session, metadata string) (bool, error)
 	GetGameSpecs() GameSpecs
 }
 

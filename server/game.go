@@ -4,6 +4,8 @@ import (
 	"errors"
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
+	"log"
+	"spaceship/model"
 	"spaceship/socketapi"
 	"strings"
 	"time"
@@ -191,21 +193,44 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 		return nil, errors.New("Game couldn't found with given mode name")
 	}
 
-	err = game.Update(gameData, session, updateData.Metadata)
+	isFinished, err := game.Update(gameData, session, updateData.Metadata)
 	if err != nil {
 		return nil, err
 	}
 
 	gameData.UpdatedAt = time.Now().Unix()
 
-	gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
-	if err != nil {
-		return nil, err
-	}
+	if isFinished {
 
-	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
-	if err != nil {
-		return nil, err
+		gameDataDB := model.GameData{}
+		gameDataDB.MapFromPB(gameData)
+
+		conn := pipeline.db.Copy()
+		defer conn.Close()
+		db := conn.DB("spaceship")
+
+		err = db.C(gameDataDB.GetCollectionName()).Insert(gameDataDB)
+		if err != nil {
+			return nil, err
+		}
+
+		err = holder.redis.Do(radix.Cmd(nil, "DEL", gameData.Id))
+		if err != nil {
+			log.Println(err)
+		}
+
+	}else{
+
+		gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
+		if err != nil {
+			return nil, err
+		}
+
+		err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	pipeline.broadcastGame(gameData)

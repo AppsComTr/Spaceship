@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/globalsign/mgo"
 	"github.com/golang/protobuf/jsonpb"
 	"log"
 	"spaceship/socketapi"
@@ -13,9 +14,10 @@ type Pipeline struct {
 	sessionHolder *SessionHolder
 	jsonProtoMarshler *jsonpb.Marshaler
 	jsonProtoUnmarshler *jsonpb.Unmarshaler
+	db *mgo.Session
 }
 
-func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker) *Pipeline {
+func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session) *Pipeline {
 	return &Pipeline{
 		config: config,
 		gameHolder: gameHolder,
@@ -23,6 +25,7 @@ func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoU
 		sessionHolder: sessionHolder,
 		jsonProtoMarshler: jsonProtoMarshler,
 		jsonProtoUnmarshler: jsonProtoUnmarshler,
+		db: db,
 	}
 }
 
