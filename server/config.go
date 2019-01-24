@@ -13,6 +13,7 @@ type Config struct {
 	}
 	RedisConfig struct{
 		ConnString string `default:"redis"`
+		CluesterEnabled bool `default:"false"`
 	}
 	AuthConfig struct{
 		JWTSecret string `default:"asdasdqweqasdqwwe"`

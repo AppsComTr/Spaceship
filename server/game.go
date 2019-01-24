@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"github.com/mediocregopher/radix/v3"
-	"github.com/satori/go.uuid"
 	"log"
 	"spaceship/model"
 	"spaceship/socketapi"
@@ -23,10 +22,10 @@ type GameSpecs struct {
 }
 
 //This should be used in matchmaker module
-func NewGame(modeName string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
+func NewGame(matchID string, modeName string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
 	//TODO: We should start lock over redis at here
 	gameData := &socketapi.GameData{
-		Id: uuid.NewV4().String(),
+		Id: matchID,
 		Name: modeName,
 		CreatedAt: time.Now().Unix(),
 	}

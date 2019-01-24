@@ -3,6 +3,8 @@ package server
 import (
 	"github.com/globalsign/mgo"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/kayalardanmehmet/redsync-radix"
+	"github.com/mediocregopher/radix/v3"
 	"log"
 	"spaceship/socketapi"
 )
@@ -15,9 +17,10 @@ type Pipeline struct {
 	jsonProtoMarshler *jsonpb.Marshaler
 	jsonProtoUnmarshler *jsonpb.Unmarshaler
 	db *mgo.Session
+	redis radix.Client
 }
 
-func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session) *Pipeline {
+func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session, redis radix.Client) *Pipeline {
 	return &Pipeline{
 		config: config,
 		gameHolder: gameHolder,
@@ -26,6 +29,7 @@ func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoU
 		jsonProtoMarshler: jsonProtoMarshler,
 		jsonProtoUnmarshler: jsonProtoUnmarshler,
 		db: db,
+		redis: redis,
 	}
 }
 
@@ -35,6 +39,14 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 	case *socketapi.Envelope_MatchUpdate:
 
 		message := envelope.GetMatchUpdate()
+
+		rs := redsyncradix.New([]radix.Client{p.redis})
+		mutex := rs.NewMutex("lock|" + message.GameID)
+		if err := mutex.Lock(); err != nil {
+			log.Println(err.Error())
+		} else {
+			defer mutex.Unlock()
+		}
 
 		_, err := UpdateGame(p.gameHolder, session, p, message)
 

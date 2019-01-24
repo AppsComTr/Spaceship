@@ -20,12 +20,12 @@ type GameController interface {
 type GameHolder struct {
 	sync.RWMutex
 	games map[string]GameController
-	redis *radix.Pool
+	redis radix.Client
 	jsonProtoMarshler *jsonpb.Marshaler
 	jsonProtoUnmarshler *jsonpb.Unmarshaler
 }
 
-func NewGameHolder(redis *radix.Pool, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler) *GameHolder {
+func NewGameHolder(redis radix.Client, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler) *GameHolder {
 	return &GameHolder{
 		games: make(map[string]GameController),
 		redis: redis,

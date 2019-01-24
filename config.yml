@@ -2,6 +2,7 @@ dbconfig:
   connstring: "mongo"
 redisconfig:
   connstring: "redis:6379"
+  clusterenabled: no
 socketconfig:
   pingperiodtime: 8000
   pongwaittime: 10000

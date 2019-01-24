@@ -2,6 +2,7 @@ dbconfig:
   connstring: "localhost"
 redisconfig:
   connstring: "localhost:6379"
+  clusterenabled: no
 socketconfig:
   pingperiodtime: 8000
   pongwaittime: 10000

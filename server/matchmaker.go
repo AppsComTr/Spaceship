@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"github.com/kayalardanmehmet/redsync-radix"
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
 	"log"
@@ -19,13 +20,13 @@ type Matchmaker interface {
 
 type LocalMatchmaker struct {
 	sync.RWMutex
-	redis *radix.Pool
+	redis radix.Client
 	gameHolder *GameHolder
 
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis *radix.Pool, gameHolder *GameHolder) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
@@ -34,10 +35,17 @@ func NewLocalMatchMaker(redis *radix.Pool, gameHolder *GameHolder) Matchmaker {
 }
 
 func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error){
-	m.Lock() //TODO lock must be applied on Game Queue Key!
-	defer m.Unlock()
-
+	//TODO: we can validate if game controller exists with given gameName to eliminate unnecessarry lock operations
 	queueKey := m.generateQueueKey(gameName, queueProperties)
+
+	rs := redsyncradix.New([]radix.Client{m.redis})
+	mutex := rs.NewMutex("lock|gamequeue|" + queueKey)
+	if err := mutex.Lock(); err != nil {
+		log.Println(err.Error())
+	} else {
+		defer mutex.Unlock()
+	}
+
 	playerCount, err := strconv.Atoi(queueProperties["player_count"])
 	if err != nil {
 		log.Println("player count: ", err)
@@ -117,8 +125,13 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 }
 
 func (m *LocalMatchmaker) Join(session Session, matchID string) (*socketapi.GameData,error){
-	m.Lock() //TODO lock must be applied on matchID Key!
-	defer m.Unlock()
+	rs := redsyncradix.New([]radix.Client{m.redis})
+	mutex := rs.NewMutex("lock|" + matchID)
+	if err := mutex.Lock(); err != nil {
+		log.Println(err.Error())
+	} else {
+		defer mutex.Unlock()
+	}
 
 	game := "Passive"
 
@@ -132,7 +145,7 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (*socketapi.Game
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 			//game.create
-			gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
+			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, session)
 			if err != nil {
 				return nil, err
 			}
@@ -169,6 +182,14 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (*socketapi.Game
 }
 
 func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
+	rs := redsyncradix.New([]radix.Client{m.redis})
+	mutex := rs.NewMutex("lock|" + matchID)
+	if err := mutex.Lock(); err != nil {
+		log.Println(err.Error())
+	} else {
+		defer mutex.Unlock()
+	}
+
 	return nil
 }
 

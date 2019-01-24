@@ -37,7 +37,7 @@ func main()  {
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
-	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db)
+	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	initGames(gameHolder)
 
@@ -63,10 +63,21 @@ func initGames(holder *server.GameHolder) {
 }
 
 
-func redisConnect(config *server.Config) *radix.Pool{
-	redisPool, err := radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
-	if err != nil {
-		log.Fatalln("Redis Connection Failed", err)
+func redisConnect(config *server.Config) radix.Client{
+
+	var redisClient radix.Client
+	var err error
+
+	if config.RedisConfig.CluesterEnabled {
+		redisClient, err = radix.NewCluster([]string{config.RedisConfig.ConnString})
+		if err != nil {
+			log.Fatalln("Redis Connection Failed", err)
+		}
+	}else{
+		redisClient, err = radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
+		if err != nil {
+			log.Fatalln("Redis Connection Failed", err)
+		}
 	}
-	return redisPool
+	return redisClient
 }
