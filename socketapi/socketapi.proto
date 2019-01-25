@@ -78,6 +78,10 @@ message Error {
     map<string, string> context = 3;
 }
 
+message MatchStart {
+    GameData game_data = 1;
+}
+
 message MatchFind {
     string game_name = 1;
     map<string, string> queue_properties = 2;
@@ -87,9 +91,6 @@ message MatchJoin {
     string match_id = 1;
 }
 
-message MatchStart {
-    GameData game_data = 1;
-}
 
 message MatchLeave {
     string match_id = 1;
@@ -98,7 +99,8 @@ message MatchLeave {
 message MatchEntry {
     enum State {
         MATCH_FINDING_PLAYERS = 0;
-        GAME_CREATED = 1;
+        MATCH_AWAITING_PLAYERS = 1;
+        GAME_CREATED = 2;
     }
     message MatchUser {
         string user_id = 1;
