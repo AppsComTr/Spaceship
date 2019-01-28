@@ -36,7 +36,6 @@ func NewMatchHandler() *MatchHandler{
 
 func (mh *MatchHandler) Join(){
 	//create game
-	//adds players to matchhandler
 }
 
 func (mh *MatchHandler) Leave(){
