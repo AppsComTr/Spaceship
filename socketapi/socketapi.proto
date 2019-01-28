@@ -99,11 +99,18 @@ message MatchLeave {
 message MatchEntry {
     enum State {
         MATCH_FINDING_PLAYERS = 0;
-        MATCH_AWAITING_PLAYERS = 1;
+        MATCH_AWAITING_PLAYERS = 1;//TODO unused remove
         GAME_CREATED = 2;
     }
+
     message MatchUser {
+        enum State {
+            READY = 0;
+            JOINED = 1;
+        }
         string user_id = 1;
+        string username = 2;
+        int32 state = 3;
     }
 
     string match_id = 1;

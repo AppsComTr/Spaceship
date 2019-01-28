@@ -74,6 +74,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			users := make([]*socketapi.MatchEntry_MatchUser, 0, playerCount)
 			users = append(users, &socketapi.MatchEntry_MatchUser{
 				UserId:session.UserID(),
+				Username: session.Username(),
 			})
 
 			matchEntry := &socketapi.MatchEntry{
@@ -156,7 +157,8 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 
 			users := make([]*socketapi.MatchEntry_MatchUser, 0, playerCount)
 			users = append(users, &socketapi.MatchEntry_MatchUser{
-				UserId: session.UserID(),//TODO: also hold username etc.
+				UserId: session.UserID(),
+				Username: session.Username(),
 			})
 
 			matchEntry := &socketapi.MatchEntry{
@@ -184,7 +186,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				return nil, err
 			}
 
-			err = m.redis.Do(radix.Cmd(nil, "SADD", "pam:" + session.ID().String(), matchID))
+			err = m.redis.Do(radix.Cmd(nil, "SADD", "pam:" + session.UserID(), matchID))
 			if err != nil {
 				log.Println("Redis SADD pam matchEntryID ", err)
 				return nil, err
@@ -204,30 +206,31 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 
 				for {
 					select{
+					//TODO needs a ctx.cancel from caller method
 					case <- time.After(timeout):
 						log.Print("Match search timeout")
-						// search for this match timeout.
-						// inform players if any and clear queue etc.
+						//TODO inform players if any and clear queue etc.
 						return
 					case latestPlayerCount, ok = <- watchChan:
 						if !ok {
 							log.Println("SHITT !OK")
-							// inform players if any and clear queue etc.
+							//TODO inform players if any and clear queue etc.
 							return
 						}else{
 							if latestPlayerCount == -1 {
 								log.Print("Match watcher send -1")
 								return
-								//Error or host user left at critical time
-								// inform players if any and clear queue etc.
+								//TODO Error or host user left at critical time
+								//TODO inform players if any and clear queue etc.
 							}else if latestPlayerCount == playerCount {
+								matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
+								m.entries[matchID] = matchEntry
 								log.Println("found enough players for this match: ", matchID)
-								//Even if looks like we have enough player to start match, matchEntry data need to be validated via game.Matchmaked?
-								//inform players to start game
+								//TODO inform players to join game or do join here for each user
 								return
 							}else{
 								log.Println("waiting players for this match: ", matchID)
-								//inform players about changes with matchentry data
+								//TODO inform players about changes with matchentry data
 							}
 						}
 					}
@@ -236,7 +239,6 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			}()
 
 			return matchEntry, nil
-			// user have to wait for match_ready_to_join or match_find_timeout
 		}else{
 			var isMember int
 			err = m.redis.Do(radix.Cmd(&isMember, "SISMEMBER", matchID, session.UserID()))
@@ -264,7 +266,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 					return nil, err
 				}
 
-				err = m.redis.Do(radix.Cmd(nil, "SADD", "pam:" + session.ID().String(), matchID))
+				err = m.redis.Do(radix.Cmd(nil, "SADD", "pam:" + session.UserID(), matchID))
 				if err != nil {
 					log.Println("Redis SADD pam matchEntryID ", err)
 					return nil, err
@@ -301,44 +303,59 @@ func (m *LocalMatchmaker) Join(session Session, matchEntryID string) (*socketapi
 	m.RLock() //TODO lock must be applied on matchID Key!
 	defer m.RUnlock()
 
-	game := "Passive"
-
+	game := "active"
 
 	matchEntry, ok := m.entries[matchEntryID]
 	if !ok {
 		return nil, errors.New("MatchID not found!")
 	}
 
-	if game == "Passive" {
+	if game == "passive" {
 		//TODO Call game.MatchmakerCheck() if valid ->
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
-			//game.create
+
 			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)
+
 			if err != nil {
 				return nil, err
 			}
 
 			matchEntry.Game = gameObject.Id
 			matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
+
+			for _,user := range matchEntry.Users {
+				if user.UserId == session.UserID() {
+					user.State = int32(socketapi.MatchEntry_MatchUser_JOINED)
+				}
+			}
+
 			m.entries[matchEntryID] = matchEntry
 
 			break
 		case int32(socketapi.MatchEntry_GAME_CREATED):
-			//TODO need to store users join status for more than 2 user gameplay
+			//TODO we have enough player to start match, matchEntry data need to be validated via game.Matchmaked?
+			for _,user := range matchEntry.Users {
+				if user.UserId == session.UserID() {
+					user.State = int32(socketapi.MatchEntry_MatchUser_JOINED)
+				}
+			}
+
 
 			delete(m.entries, matchID)// only clear when last player joined
 
+
+			m.entries[matchEntryID] = matchEntry
+			//TODO Opponent join event
+			//TODO inform players
+			//game.Matchmaked validate every user join
+
 			break
 		}
-	}else if game == "Active" {
-		/*TODO Call game.MatchmakerCheck()
-			if valid
-				Notify users everyone is ready and game started
-			if not valid
-				Notify users with latest match state
-		 */
-
+	}else if game == "active" {
+		//Players received game data and moved to game screen
+		//TODO update player states
+		//TODO inform players
 	}else if game == "realtime" {
 
 	}
@@ -354,6 +371,7 @@ func (m *LocalMatchmaker) Join(session Session, matchEntryID string) (*socketapi
 
 func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 
+
 	rs := redsyncradix.New([]radix.Client{m.redis})
 	mutex := rs.NewMutex("lock|" + matchID)
 	if err := mutex.Lock(); err != nil {
@@ -362,9 +380,79 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 		defer mutex.Unlock()
 	}
 
+
+	m.Lock() //TODO lock must be applied on matchID Key!
+	defer m.Unlock()
+
+	var isMember int
+	err := m.redis.Do(radix.Cmd(&isMember, "SISMEMBER", "pm:"+session.UserID()))
+	if err != nil {
+		return err
+	}
+	if isMember == 1 {
+		matchEntry := m.entries[matchID]
+
+		if len(matchEntry.Users) == 1 {
+			err := m.redis.Do(radix.Cmd(nil, "SREM", "pm:"+session.UserID(), matchID))
+			if err != nil {
+				return err
+			}
+			err = m.redis.Do(radix.Cmd(nil, "SREM", "pam:"+session.UserID(), matchID))
+			if err != nil {
+				return err
+			}
+			err = m.redis.Do(radix.Cmd(nil, "REM", matchID))
+			if err != nil {
+				return err
+			}
+
+			delete(m.entries, matchID)
+			//TODO notify game.leave
+		}else{
+			err := m.redis.Do(radix.Cmd(nil, "SREM", "pm:"+session.UserID(), matchID))
+			if err != nil {
+				return err
+			}
+			err = m.redis.Do(radix.Cmd(nil, "SREM", "pam:"+session.UserID(), matchID))
+			if err != nil {
+				return err
+			}
+			err = m.redis.Do(radix.Cmd(nil, "SREM", matchID, session.UserID()))
+			if err != nil {
+				return err
+			}
+
+			users := make([]*socketapi.MatchEntry_MatchUser, 0, matchEntry.MaxCount)
+			for _, user := range matchEntry.Users {
+				if user.UserId != session.UserID() {
+					users = append(users, user)
+				}
+			}
+			matchEntry.Users = users
+			m.entries[matchID] = matchEntry
+
+			//TODO notify !!opponent players if any
+			//TODO notify game.leave
+		}
+	}else{
+		return  errors.New("Match can not found")
+	}
+
 	return nil
 }
 
+func (m *LocalMatchmaker) LeaveAll(session session) error {
+	m.Lock()
+	defer m.Unlock()
+	//Bu metodu network switch problemi cozuldugunde doldurmak daha mantikli
+
+	//get and remove user from pam:UserID members
+	//if last left player deletes matchentry
+	//delete user from matchentry and update
+	//inform opponents players
+	//notify game.leave
+	return nil
+}
 
 
 func (m *LocalMatchmaker) generateQueueKey(gameName string, queueProperties map[string]string) string {
