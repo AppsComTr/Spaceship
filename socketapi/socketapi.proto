@@ -125,6 +125,15 @@ message MatchEntry {
     string gameName = 7;
 }
 
+message MatchError {
+    enum Code {
+        MATCH_TIMEOUT = 0;
+        MATCH_INTERNAL_ERROR = 1;
+    }
+    int32 code = 1;
+    string message = 2;
+}
+
 message GameData {
     string id = 1;
     string name = 2;

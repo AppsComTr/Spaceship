@@ -27,9 +27,8 @@ type LocalMatchmaker struct {
 	redis radix.Client
 	gameHolder *GameHolder
 
+
 	entries map[string]*socketapi.MatchEntry
-	userActiveMatches map[uuid.UUID]map[string]string //keeps users online matches by sessionID
-	userMatches map[string]map[string]string //keeps users active matches by userID
 }
 
 func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder) Matchmaker {
@@ -206,27 +205,38 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 
 				for {
 					select{
-					//TODO needs a ctx.cancel from caller method
 					case <- time.After(timeout):
-						log.Print("Match search timeout")
-						//TODO inform players if any and clear queue etc.
+						log.Println("Match search timeout")
+						//TODO inform players match search timeout
+						//broadcastMatch
+
+						m.clearMatch(queueKey,matchID, matchEntry.Users)
 						return
 					case latestPlayerCount, ok = <- watchChan:
 						if !ok {
-							log.Println("SHITT !OK")
-							//TODO inform players if any and clear queue etc.
+							log.Println("Active game watcher return false")
+							//TODO inform players match error
+							//broadcastMatch
+							m.clearMatch(queueKey, matchID, matchEntry.Users)
 							return
 						}else{
 							if latestPlayerCount == -1 {
-								log.Print("Match watcher send -1")
+								log.Println("Match watcher send -1, error happened inside watcher")
+								//TODO inform players match error
+								//broadcastMatch
+								m.clearMatch(queueKey,matchID, matchEntry.Users)
 								return
-								//TODO Error or host user left at critical time
-								//TODO inform players if any and clear queue etc.
 							}else if latestPlayerCount == playerCount {
 								matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
 								m.entries[matchID] = matchEntry
 								log.Println("found enough players for this match: ", matchID)
 								//TODO inform players to join game or do join here for each user
+
+								err = m.redis.Do(radix.Cmd(nil, "LREM", queueKey, "0", matchID))//FIX queueKey
+								if err != nil {
+									log.Println("Redis LREM: ", err)
+								}
+
 								return
 							}else{
 								log.Println("waiting players for this match: ", matchID)
@@ -273,11 +283,10 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				}
 
 				m.entries[matchID] = matchEntry
-
 			}else if isMember != 1 && matchEntry.ActiveCount == int32(playerCount) {
 				log.Println("Ignore user request return not found and try again")
 				//TODO ?need to check matchEntry.ActiveCount > int32(playerCount)
-				err = errors.New("Not suitable for this match")
+				err = errors.New("not suitable for this match")
 				return nil,err
 			}
 
@@ -356,8 +365,6 @@ func (m *LocalMatchmaker) Join(session Session, matchEntryID string) (*socketapi
 		//Players received game data and moved to game screen
 		//TODO update player states
 		//TODO inform players
-	}else if game == "realtime" {
-
 	}
 
 	//We should trigger relevant game controllers methods
@@ -461,4 +468,31 @@ func (m *LocalMatchmaker) generateQueueKey(gameName string, queueProperties map[
 		k += ":" + v
 	}
 	return k
+}
+
+//TODO Muting errors inside method maybe bad idea
+func (m *LocalMatchmaker) clearMatch(queueKey string, matchID string, users []*socketapi.MatchEntry_MatchUser){
+	err := m.redis.Do(radix.Cmd(nil, "LREM", queueKey, "0", matchID))
+	if err != nil {
+		log.Println("Redis LREM: ", err)
+	}
+
+	err = m.redis.Do(radix.Cmd(nil, "DEL", matchID))
+	if err != nil {
+		log.Println("Redis DEL: ", err)
+	}
+
+	//TODO redis multi
+	for _,user := range users {
+		err = m.redis.Do(radix.Cmd(nil, "SREM", "pm:"+user.UserId))
+		if err != nil {
+			log.Println("Redis DEL: ", err)
+		}
+		err = m.redis.Do(radix.Cmd(nil, "SREM", "pam:"+user.UserId))
+		if err != nil {
+			log.Println("Redis DEL: ", err)
+		}
+	}
+
+	delete(m.entries, matchID)
 }
