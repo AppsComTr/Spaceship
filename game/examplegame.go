@@ -156,6 +156,12 @@ func (tg *ExampleGame) Update(gameData *socketapi.GameData, session server.Sessi
 	return isGameFinished, nil
 }
 
+func (tg *ExampleGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue) bool {
+
+	return true
+
+}
+
 func (tg ExampleGame) GetGameSpecs() server.GameSpecs {
 	return exGameSpecs
 }

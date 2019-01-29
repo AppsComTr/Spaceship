@@ -2,31 +2,31 @@ package test
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/pkg/errors"
 	"spaceship/server"
 	"spaceship/socketapi"
 )
 
-type PTGame struct {}
+type RTGame struct {}
 
-var ptGameSpecs = server.GameSpecs{
+var rtGameSpecs = server.GameSpecs{
 	PlayerCount: 2,
-	Mode: server.GAME_TYPE_ACTIVE_TURN_BASED,
-	TickInterval: 0,
+	Mode: server.GAME_TYPE_REAL_TIME,
+	TickInterval: 1000,
 }
 
 const (
-	PT_GAME_USER_STATE_WAITING_FOR_PLAY = iota
-	PT_GAME_USER_STATE_COMPLETED
+	RT_GAME_USER_STATE_WAITING_FOR_PLAY = iota
+	RT_GAME_USER_STATE_COMPLETED
 )
 
-type PTGameUpdateData struct {
+type RTGameUpdateData struct {
 	FoundWordCount int
 	FoundWordsLength int
 	TotalDuration int
 }
 
-type PTGameUserData struct {
+type RTGameUserData struct {
 	UserID string
 	State int
 	FoundWordCount int
@@ -35,18 +35,18 @@ type PTGameUserData struct {
 }
 
 //Dummy struct for this example game
-type PTGameData struct {
+type RTGameData struct {
 	Board string
 	HomeUser *PTGameUserData
 	AwayUser *PTGameUserData
 }
 
-func (tg *PTGame) GetName() string {
+func (tg *RTGame) GetName() string {
 	//These value should be unique for each games
-	return "testGame"
+	return "realtimeTestGame"
 }
 
-func (tg *PTGame) Init(gameData *socketapi.GameData) error {
+func (tg *RTGame) Init(gameData *socketapi.GameData) error {
 
 	ptGameData := PTGameData{
 		Board: "zzzxxxyyyaaabbbccc",
@@ -62,7 +62,7 @@ func (tg *PTGame) Init(gameData *socketapi.GameData) error {
 	return nil
 }
 
-func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session) error {
+func (tg *RTGame) Join(gameData *socketapi.GameData, session server.Session) error {
 
 	var ptGameData PTGameData
 
@@ -99,7 +99,7 @@ func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session) err
 //}
 
 //Users should create their own metadata format. Ex: json string
-func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string) (bool, error) {
+func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string) (bool, error) {
 
 	var ptGameUpdateData PTGameUpdateData
 	err := json.Unmarshal([]byte(metadata), &ptGameUpdateData)
@@ -157,14 +157,15 @@ func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, m
 	return isGameFinished, nil
 }
 
-func (tg *PTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue) bool {
+func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue) bool {
 
 	return true
 
 }
 
-func (tg PTGame) GetGameSpecs() server.GameSpecs {
-	return ptGameSpecs
+func (tg RTGame) GetGameSpecs() server.GameSpecs {
+	return rtGameSpecs
 }
+
 
 

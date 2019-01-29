@@ -39,13 +39,15 @@ func NewServer(t *testing.T) (*server.Server) {
 	}
 	redis := redisConnect(t, config)
 
+	var pipeline *server.Pipeline
 	db := server.ConnectDB(config)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonpbMarshaler, jsonpbUnmarshaler)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
-	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, pipeline)
+	pipeline = server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	gameHolder.Add(&PTGame{})
+	gameHolder.Add(&RTGame{})
 
 	return server.StartServer(sessionHolder, gameHolder, config, jsonpbMarshaler, jsonpbUnmarshaler, pipeline, db)
 

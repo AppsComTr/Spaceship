@@ -36,6 +36,12 @@ message MatchUpdate {
     string metadata = 2;
 }
 
+message MatchUpdateQueue {
+    string gameID = 1;
+    string userID = 2;
+    string metadata = 3;
+}
+
 message MatchUpdateResp {
     GameData game_data = 1;
 }

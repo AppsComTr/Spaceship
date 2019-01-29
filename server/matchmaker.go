@@ -22,15 +22,17 @@ type LocalMatchmaker struct {
 	sync.RWMutex
 	redis radix.Client
 	gameHolder *GameHolder
+	pipeline *Pipeline
 
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, pipeline *Pipeline) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
 		entries: make(map[string]*socketapi.MatchEntry),
+		pipeline: pipeline,
 	}
 }
 
@@ -145,7 +147,7 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (*socketapi.Game
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 			//game.create
-			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, session)
+			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, m.pipeline, session)
 			if err != nil {
 				return nil, err
 			}
