@@ -72,7 +72,11 @@ func (x Error_Code) String() string {
 	return proto.EnumName(Error_Code_name, int32(x))
 }
 func (Error_Code) EnumDescriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{4, 0}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{3, 0}
+>>>>>>> working on active watcher
 }
 
 type MatchEntry_State int32
@@ -80,25 +84,32 @@ type MatchEntry_State int32
 const (
 	MatchEntry_MATCH_FINDING_PLAYERS  MatchEntry_State = 0
 	MatchEntry_MATCH_AWAITING_PLAYERS MatchEntry_State = 1
-	MatchEntry_GAME_CREATED           MatchEntry_State = 2
+	MatchEntry_MATCH_JOINING_PLAYERS  MatchEntry_State = 2
+	MatchEntry_GAME_CREATED           MatchEntry_State = 3
 )
 
 var MatchEntry_State_name = map[int32]string{
 	0: "MATCH_FINDING_PLAYERS",
 	1: "MATCH_AWAITING_PLAYERS",
-	2: "GAME_CREATED",
+	2: "MATCH_JOINING_PLAYERS",
+	3: "GAME_CREATED",
 }
 var MatchEntry_State_value = map[string]int32{
 	"MATCH_FINDING_PLAYERS":  0,
 	"MATCH_AWAITING_PLAYERS": 1,
-	"GAME_CREATED":           2,
+	"MATCH_JOINING_PLAYERS":  2,
+	"GAME_CREATED":           3,
 }
 
 func (x MatchEntry_State) String() string {
 	return proto.EnumName(MatchEntry_State_name, int32(x))
 }
 func (MatchEntry_State) EnumDescriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{9, 0}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{8, 0}
+>>>>>>> working on active watcher
 }
 
 type MatchEntry_MatchUser_State int32
@@ -121,13 +132,41 @@ func (x MatchEntry_MatchUser_State) String() string {
 	return proto.EnumName(MatchEntry_MatchUser_State_name, int32(x))
 }
 func (MatchEntry_MatchUser_State) EnumDescriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{9, 0, 0}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{8, 0, 0}
+}
+
+type MatchError_Code int32
+
+const (
+	MatchError_MATCH_TIMEOUT        MatchError_Code = 0
+	MatchError_MATCH_INTERNAL_ERROR MatchError_Code = 1
+)
+
+var MatchError_Code_name = map[int32]string{
+	0: "MATCH_TIMEOUT",
+	1: "MATCH_INTERNAL_ERROR",
+}
+var MatchError_Code_value = map[string]int32{
+	"MATCH_TIMEOUT":        0,
+	"MATCH_INTERNAL_ERROR": 1,
+}
+
+func (x MatchError_Code) String() string {
+	return proto.EnumName(MatchError_Code_name, int32(x))
+}
+func (MatchError_Code) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{9, 0}
+>>>>>>> working on active watcher
 }
 
 type Envelope struct {
 	Cid string `protobuf:"bytes,1,opt,name=cid,proto3" json:"cid,omitempty"`
 	// Types that are valid to be assigned to Message:
 	//	*Envelope_Error
+	//	*Envelope_MatchError
 	//	*Envelope_MatchStart
 	//	*Envelope_MatchUpdate
 	//	*Envelope_MatchFind
@@ -146,7 +185,11 @@ func (m *Envelope) Reset()         { *m = Envelope{} }
 func (m *Envelope) String() string { return proto.CompactTextString(m) }
 func (*Envelope) ProtoMessage()    {}
 func (*Envelope) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{0}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{0}
+>>>>>>> working on active watcher
 }
 func (m *Envelope) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Envelope.Unmarshal(m, b)
@@ -181,39 +224,45 @@ type Envelope_Error struct {
 	Error *Error `protobuf:"bytes,2,opt,name=error,proto3,oneof"`
 }
 
+type Envelope_MatchError struct {
+	MatchError *MatchError `protobuf:"bytes,3,opt,name=match_error,json=matchError,proto3,oneof"`
+}
+
 type Envelope_MatchStart struct {
-	MatchStart *MatchStart `protobuf:"bytes,3,opt,name=match_start,json=matchStart,proto3,oneof"`
+	MatchStart *MatchStart `protobuf:"bytes,4,opt,name=match_start,json=matchStart,proto3,oneof"`
 }
 
 type Envelope_MatchUpdate struct {
-	MatchUpdate *MatchUpdate `protobuf:"bytes,4,opt,name=match_update,json=matchUpdate,proto3,oneof"`
+	MatchUpdate *MatchUpdate `protobuf:"bytes,5,opt,name=match_update,json=matchUpdate,proto3,oneof"`
 }
 
 type Envelope_MatchFind struct {
-	MatchFind *MatchFind `protobuf:"bytes,5,opt,name=match_find,json=matchFind,proto3,oneof"`
+	MatchFind *MatchFind `protobuf:"bytes,6,opt,name=match_find,json=matchFind,proto3,oneof"`
 }
 
 type Envelope_MatchJoin struct {
-	MatchJoin *MatchJoin `protobuf:"bytes,6,opt,name=match_join,json=matchJoin,proto3,oneof"`
+	MatchJoin *MatchJoin `protobuf:"bytes,7,opt,name=match_join,json=matchJoin,proto3,oneof"`
 }
 
 type Envelope_MatchLeave struct {
-	MatchLeave *MatchLeave `protobuf:"bytes,7,opt,name=match_leave,json=matchLeave,proto3,oneof"`
+	MatchLeave *MatchLeave `protobuf:"bytes,8,opt,name=match_leave,json=matchLeave,proto3,oneof"`
 }
 
 type Envelope_MatchEntry struct {
-	MatchEntry *MatchEntry `protobuf:"bytes,8,opt,name=match_entry,json=matchEntry,proto3,oneof"`
+	MatchEntry *MatchEntry `protobuf:"bytes,9,opt,name=match_entry,json=matchEntry,proto3,oneof"`
 }
 
 type Envelope_GameData struct {
-	GameData *GameData `protobuf:"bytes,9,opt,name=game_data,json=gameData,proto3,oneof"`
+	GameData *GameData `protobuf:"bytes,10,opt,name=game_data,json=gameData,proto3,oneof"`
 }
 
 type Envelope_MatchUpdateResp struct {
-	MatchUpdateResp *MatchUpdateResp `protobuf:"bytes,10,opt,name=match_update_resp,json=matchUpdateResp,proto3,oneof"`
+	MatchUpdateResp *MatchUpdateResp `protobuf:"bytes,11,opt,name=match_update_resp,json=matchUpdateResp,proto3,oneof"`
 }
 
 func (*Envelope_Error) isEnvelope_Message() {}
+
+func (*Envelope_MatchError) isEnvelope_Message() {}
 
 func (*Envelope_MatchStart) isEnvelope_Message() {}
 
@@ -241,6 +290,13 @@ func (m *Envelope) GetMessage() isEnvelope_Message {
 func (m *Envelope) GetError() *Error {
 	if x, ok := m.GetMessage().(*Envelope_Error); ok {
 		return x.Error
+	}
+	return nil
+}
+
+func (m *Envelope) GetMatchError() *MatchError {
+	if x, ok := m.GetMessage().(*Envelope_MatchError); ok {
+		return x.MatchError
 	}
 	return nil
 }
@@ -305,6 +361,7 @@ func (m *Envelope) GetMatchUpdateResp() *MatchUpdateResp {
 func (*Envelope) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _Envelope_OneofMarshaler, _Envelope_OneofUnmarshaler, _Envelope_OneofSizer, []interface{}{
 		(*Envelope_Error)(nil),
+		(*Envelope_MatchError)(nil),
 		(*Envelope_MatchStart)(nil),
 		(*Envelope_MatchUpdate)(nil),
 		(*Envelope_MatchFind)(nil),
@@ -325,43 +382,48 @@ func _Envelope_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 		if err := b.EncodeMessage(x.Error); err != nil {
 			return err
 		}
-	case *Envelope_MatchStart:
+	case *Envelope_MatchError:
 		b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.MatchError); err != nil {
+			return err
+		}
+	case *Envelope_MatchStart:
+		b.EncodeVarint(4<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MatchStart); err != nil {
 			return err
 		}
 	case *Envelope_MatchUpdate:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
+		b.EncodeVarint(5<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MatchUpdate); err != nil {
 			return err
 		}
 	case *Envelope_MatchFind:
-		b.EncodeVarint(5<<3 | proto.WireBytes)
+		b.EncodeVarint(6<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MatchFind); err != nil {
 			return err
 		}
 	case *Envelope_MatchJoin:
-		b.EncodeVarint(6<<3 | proto.WireBytes)
+		b.EncodeVarint(7<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MatchJoin); err != nil {
 			return err
 		}
 	case *Envelope_MatchLeave:
-		b.EncodeVarint(7<<3 | proto.WireBytes)
+		b.EncodeVarint(8<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MatchLeave); err != nil {
 			return err
 		}
 	case *Envelope_MatchEntry:
-		b.EncodeVarint(8<<3 | proto.WireBytes)
+		b.EncodeVarint(9<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MatchEntry); err != nil {
 			return err
 		}
 	case *Envelope_GameData:
-		b.EncodeVarint(9<<3 | proto.WireBytes)
+		b.EncodeVarint(10<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.GameData); err != nil {
 			return err
 		}
 	case *Envelope_MatchUpdateResp:
-		b.EncodeVarint(10<<3 | proto.WireBytes)
+		b.EncodeVarint(11<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.MatchUpdateResp); err != nil {
 			return err
 		}
@@ -383,7 +445,15 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_Error{msg}
 		return true, err
-	case 3: // message.match_start
+	case 3: // message.match_error
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(MatchError)
+		err := b.DecodeMessage(msg)
+		m.Message = &Envelope_MatchError{msg}
+		return true, err
+	case 4: // message.match_start
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -391,7 +461,7 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_MatchStart{msg}
 		return true, err
-	case 4: // message.match_update
+	case 5: // message.match_update
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -399,7 +469,7 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_MatchUpdate{msg}
 		return true, err
-	case 5: // message.match_find
+	case 6: // message.match_find
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -407,7 +477,7 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_MatchFind{msg}
 		return true, err
-	case 6: // message.match_join
+	case 7: // message.match_join
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -415,7 +485,7 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_MatchJoin{msg}
 		return true, err
-	case 7: // message.match_leave
+	case 8: // message.match_leave
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -423,7 +493,7 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_MatchLeave{msg}
 		return true, err
-	case 8: // message.match_entry
+	case 9: // message.match_entry
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -431,7 +501,7 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_MatchEntry{msg}
 		return true, err
-	case 9: // message.game_data
+	case 10: // message.game_data
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -439,7 +509,7 @@ func _Envelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffe
 		err := b.DecodeMessage(msg)
 		m.Message = &Envelope_GameData{msg}
 		return true, err
-	case 10: // message.match_update_resp
+	case 11: // message.match_update_resp
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -458,6 +528,11 @@ func _Envelope_OneofSizer(msg proto.Message) (n int) {
 	switch x := m.Message.(type) {
 	case *Envelope_Error:
 		s := proto.Size(x.Error)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Envelope_MatchError:
+		s := proto.Size(x.MatchError)
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -520,7 +595,11 @@ func (m *MatchUpdate) Reset()         { *m = MatchUpdate{} }
 func (m *MatchUpdate) String() string { return proto.CompactTextString(m) }
 func (*MatchUpdate) ProtoMessage()    {}
 func (*MatchUpdate) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{1}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{1}
+>>>>>>> working on active watcher
 }
 func (m *MatchUpdate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchUpdate.Unmarshal(m, b)
@@ -619,7 +698,11 @@ func (m *MatchUpdateResp) Reset()         { *m = MatchUpdateResp{} }
 func (m *MatchUpdateResp) String() string { return proto.CompactTextString(m) }
 func (*MatchUpdateResp) ProtoMessage()    {}
 func (*MatchUpdateResp) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{3}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{2}
+>>>>>>> working on active watcher
 }
 func (m *MatchUpdateResp) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchUpdateResp.Unmarshal(m, b)
@@ -663,7 +746,11 @@ func (m *Error) Reset()         { *m = Error{} }
 func (m *Error) String() string { return proto.CompactTextString(m) }
 func (*Error) ProtoMessage()    {}
 func (*Error) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{4}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{3}
+>>>>>>> working on active watcher
 }
 func (m *Error) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Error.Unmarshal(m, b)
@@ -715,7 +802,11 @@ func (m *MatchStart) Reset()         { *m = MatchStart{} }
 func (m *MatchStart) String() string { return proto.CompactTextString(m) }
 func (*MatchStart) ProtoMessage()    {}
 func (*MatchStart) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{5}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{4}
+>>>>>>> working on active watcher
 }
 func (m *MatchStart) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchStart.Unmarshal(m, b)
@@ -754,7 +845,11 @@ func (m *MatchFind) Reset()         { *m = MatchFind{} }
 func (m *MatchFind) String() string { return proto.CompactTextString(m) }
 func (*MatchFind) ProtoMessage()    {}
 func (*MatchFind) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{6}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{5}
+>>>>>>> working on active watcher
 }
 func (m *MatchFind) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchFind.Unmarshal(m, b)
@@ -799,7 +894,11 @@ func (m *MatchJoin) Reset()         { *m = MatchJoin{} }
 func (m *MatchJoin) String() string { return proto.CompactTextString(m) }
 func (*MatchJoin) ProtoMessage()    {}
 func (*MatchJoin) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{7}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{6}
+>>>>>>> working on active watcher
 }
 func (m *MatchJoin) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchJoin.Unmarshal(m, b)
@@ -837,7 +936,11 @@ func (m *MatchLeave) Reset()         { *m = MatchLeave{} }
 func (m *MatchLeave) String() string { return proto.CompactTextString(m) }
 func (*MatchLeave) ProtoMessage()    {}
 func (*MatchLeave) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{8}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{7}
+>>>>>>> working on active watcher
 }
 func (m *MatchLeave) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchLeave.Unmarshal(m, b)
@@ -872,6 +975,7 @@ type MatchEntry struct {
 	Game                 string                  `protobuf:"bytes,5,opt,name=game,proto3" json:"game,omitempty"`
 	Users                []*MatchEntry_MatchUser `protobuf:"bytes,6,rep,name=users,proto3" json:"users,omitempty"`
 	GameName             string                  `protobuf:"bytes,7,opt,name=gameName,proto3" json:"gameName,omitempty"`
+	Queuekey             string                  `protobuf:"bytes,8,opt,name=queuekey,proto3" json:"queuekey,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`
@@ -881,7 +985,11 @@ func (m *MatchEntry) Reset()         { *m = MatchEntry{} }
 func (m *MatchEntry) String() string { return proto.CompactTextString(m) }
 func (*MatchEntry) ProtoMessage()    {}
 func (*MatchEntry) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{9}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{8}
+>>>>>>> working on active watcher
 }
 func (m *MatchEntry) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchEntry.Unmarshal(m, b)
@@ -950,6 +1058,13 @@ func (m *MatchEntry) GetGameName() string {
 	return ""
 }
 
+func (m *MatchEntry) GetQueuekey() string {
+	if m != nil {
+		return m.Queuekey
+	}
+	return ""
+}
+
 type MatchEntry_MatchUser struct {
 	UserId               string   `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Username             string   `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
@@ -963,7 +1078,11 @@ func (m *MatchEntry_MatchUser) Reset()         { *m = MatchEntry_MatchUser{} }
 func (m *MatchEntry_MatchUser) String() string { return proto.CompactTextString(m) }
 func (*MatchEntry_MatchUser) ProtoMessage()    {}
 func (*MatchEntry_MatchUser) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{9, 0}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{8, 0}
+>>>>>>> working on active watcher
 }
 func (m *MatchEntry_MatchUser) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MatchEntry_MatchUser.Unmarshal(m, b)
@@ -1004,6 +1123,52 @@ func (m *MatchEntry_MatchUser) GetState() int32 {
 	return 0
 }
 
+type MatchError struct {
+	Code                 int32    `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message              string   `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *MatchError) Reset()         { *m = MatchError{} }
+func (m *MatchError) String() string { return proto.CompactTextString(m) }
+func (*MatchError) ProtoMessage()    {}
+func (*MatchError) Descriptor() ([]byte, []int) {
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{9}
+}
+func (m *MatchError) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_MatchError.Unmarshal(m, b)
+}
+func (m *MatchError) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_MatchError.Marshal(b, m, deterministic)
+}
+func (dst *MatchError) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MatchError.Merge(dst, src)
+}
+func (m *MatchError) XXX_Size() int {
+	return xxx_messageInfo_MatchError.Size(m)
+}
+func (m *MatchError) XXX_DiscardUnknown() {
+	xxx_messageInfo_MatchError.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MatchError proto.InternalMessageInfo
+
+func (m *MatchError) GetCode() int32 {
+	if m != nil {
+		return m.Code
+	}
+	return 0
+}
+
+func (m *MatchError) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
 type GameData struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -1021,7 +1186,11 @@ func (m *GameData) Reset()         { *m = GameData{} }
 func (m *GameData) String() string { return proto.CompactTextString(m) }
 func (*GameData) ProtoMessage()    {}
 func (*GameData) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return fileDescriptor_socketapi_4881f5bdc473ae3c, []int{10}
+=======
+	return fileDescriptor_socketapi_2143ce5363df50c8, []int{10}
+>>>>>>> working on active watcher
 }
 func (m *GameData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GameData.Unmarshal(m, b)
@@ -1104,13 +1273,16 @@ func init() {
 	proto.RegisterType((*MatchLeave)(nil), "spaceship.socket.MatchLeave")
 	proto.RegisterType((*MatchEntry)(nil), "spaceship.socket.MatchEntry")
 	proto.RegisterType((*MatchEntry_MatchUser)(nil), "spaceship.socket.MatchEntry.MatchUser")
+	proto.RegisterType((*MatchError)(nil), "spaceship.socket.MatchError")
 	proto.RegisterType((*GameData)(nil), "spaceship.socket.GameData")
 	proto.RegisterEnum("spaceship.socket.Error_Code", Error_Code_name, Error_Code_value)
 	proto.RegisterEnum("spaceship.socket.MatchEntry_State", MatchEntry_State_name, MatchEntry_State_value)
 	proto.RegisterEnum("spaceship.socket.MatchEntry_MatchUser_State", MatchEntry_MatchUser_State_name, MatchEntry_MatchUser_State_value)
+	proto.RegisterEnum("spaceship.socket.MatchError_Code", MatchError_Code_name, MatchError_Code_value)
 }
 
 func init() {
+<<<<<<< HEAD
 	proto.RegisterFile("socketapi/socketapi.proto", fileDescriptor_socketapi_4881f5bdc473ae3c)
 }
 
@@ -1183,4 +1355,81 @@ var fileDescriptor_socketapi_4881f5bdc473ae3c = []byte{
 	0x1b, 0x32, 0xe7, 0xf0, 0x2c, 0x88, 0x87, 0xdc, 0x37, 0x90, 0xde, 0x68, 0x45, 0xf4, 0x57, 0x59,
 	0x19, 0x0e, 0x07, 0xbf, 0xc9, 0x5a, 0x01, 0x7a, 0x5b, 0xe3, 0x7f, 0x8e, 0xbe, 0xf8, 0x27, 0x00,
 	0x00, 0xff, 0xff, 0x77, 0xa6, 0x45, 0x87, 0xa5, 0x09, 0x00, 0x00,
+=======
+	proto.RegisterFile("socketapi/socketapi.proto", fileDescriptor_socketapi_2143ce5363df50c8)
+}
+
+var fileDescriptor_socketapi_2143ce5363df50c8 = []byte{
+	// 1111 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0x5d, 0x6e, 0xdb, 0x46,
+	0x10, 0x16, 0x45, 0x51, 0x12, 0x47, 0x4e, 0xcd, 0x6c, 0x7e, 0xcc, 0x28, 0xa9, 0xe3, 0x10, 0x45,
+	0xea, 0x27, 0xb9, 0x48, 0x1e, 0xda, 0x06, 0x41, 0x0b, 0x4a, 0xa2, 0x2d, 0x1a, 0x36, 0xa5, 0xac,
+	0x24, 0xb4, 0x4e, 0x1f, 0x88, 0x8d, 0xb4, 0xb1, 0x59, 0x9b, 0x22, 0x43, 0x52, 0xae, 0x7d, 0x87,
+	0x9e, 0xa2, 0x4f, 0x45, 0xcf, 0xd0, 0x0b, 0xf4, 0x06, 0x3d, 0x44, 0x0f, 0x51, 0xec, 0x2e, 0xff,
+	0x6c, 0xc7, 0x2a, 0xd2, 0xb7, 0xfd, 0x66, 0xe6, 0xfb, 0x76, 0x38, 0xb3, 0x33, 0x12, 0x3c, 0x8a,
+	0x83, 0xd9, 0x29, 0x4d, 0x48, 0xe8, 0xed, 0xe4, 0xa7, 0x4e, 0x18, 0x05, 0x49, 0x80, 0xb4, 0x38,
+	0x24, 0x33, 0x1a, 0x9f, 0x78, 0x61, 0x47, 0xb8, 0xda, 0x4f, 0x8f, 0x83, 0xe0, 0xf8, 0x8c, 0xee,
+	0x70, 0xff, 0xbb, 0xe5, 0xfb, 0x9d, 0xc4, 0xf3, 0x69, 0x9c, 0x10, 0x3f, 0x14, 0x94, 0xf6, 0xe6,
+	0xf5, 0x80, 0x5f, 0x22, 0x12, 0x86, 0x34, 0x8a, 0x53, 0xff, 0x46, 0x2e, 0xb9, 0xc3, 0x6e, 0xcc,
+	0xef, 0x32, 0x7e, 0x57, 0xa0, 0x69, 0x2d, 0xce, 0xe9, 0x59, 0x10, 0x52, 0xa4, 0x81, 0x3c, 0xf3,
+	0xe6, 0xba, 0xb4, 0x25, 0x6d, 0xab, 0x98, 0x1d, 0xd1, 0x0e, 0x28, 0x34, 0x8a, 0x82, 0x48, 0xaf,
+	0x6e, 0x49, 0xdb, 0xad, 0x17, 0x1b, 0x9d, 0xeb, 0xa9, 0x75, 0x2c, 0xe6, 0x1e, 0x54, 0xb0, 0x88,
+	0x43, 0xdf, 0x43, 0xcb, 0x27, 0xc9, 0xec, 0xc4, 0x15, 0x34, 0x99, 0xd3, 0x9e, 0xdc, 0xa4, 0x1d,
+	0xb2, 0xa0, 0x8c, 0x0b, 0x7e, 0x8e, 0x0a, 0x81, 0x38, 0x21, 0x51, 0xa2, 0xd7, 0x56, 0x0a, 0x8c,
+	0x59, 0x4c, 0x2e, 0xc0, 0x11, 0xea, 0xc2, 0x9a, 0x10, 0x58, 0x86, 0x73, 0x92, 0x50, 0x5d, 0xe1,
+	0x0a, 0x9f, 0xdf, 0xa2, 0x30, 0xe5, 0x41, 0x83, 0x0a, 0x16, 0xb7, 0x0a, 0x88, 0x5e, 0x83, 0x50,
+	0x74, 0xdf, 0x7b, 0x8b, 0xb9, 0x5e, 0xe7, 0x0a, 0x8f, 0x6f, 0x51, 0xd8, 0xf5, 0x16, 0xf3, 0x41,
+	0x05, 0xab, 0x7e, 0x06, 0x0a, 0xf6, 0xcf, 0x81, 0xb7, 0xd0, 0x1b, 0x2b, 0xd9, 0xfb, 0x81, 0xb7,
+	0xc8, 0xd9, 0x0c, 0x14, 0x05, 0x38, 0xa3, 0xe4, 0x9c, 0xea, 0xcd, 0x95, 0x05, 0x38, 0x60, 0x31,
+	0x79, 0x01, 0x38, 0x2a, 0xb5, 0x60, 0x91, 0x44, 0x97, 0xba, 0xba, 0xba, 0x05, 0x2c, 0xa6, 0x68,
+	0x01, 0x43, 0xe8, 0x5b, 0x50, 0x8f, 0x89, 0x4f, 0xdd, 0x39, 0x49, 0x88, 0x0e, 0x9c, 0xde, 0xbe,
+	0x49, 0xdf, 0x23, 0x3e, 0xed, 0x93, 0x84, 0x0c, 0x2a, 0xb8, 0x79, 0x9c, 0x9e, 0xd1, 0x10, 0xee,
+	0x96, 0x8b, 0xef, 0x46, 0x34, 0x0e, 0xf5, 0x16, 0x97, 0x78, 0xb6, 0xb2, 0x03, 0x98, 0xc6, 0xe1,
+	0xa0, 0x82, 0xd7, 0xfd, 0xab, 0xa6, 0xae, 0x0a, 0x0d, 0x9f, 0xc6, 0x31, 0x39, 0xa6, 0x86, 0x09,
+	0xad, 0x12, 0x01, 0x3d, 0x84, 0x3a, 0xbb, 0xd6, 0xee, 0xa7, 0xef, 0x35, 0x45, 0xa8, 0x0d, 0x4d,
+	0x9f, 0x26, 0x84, 0x27, 0x5f, 0xe5, 0x9e, 0x1c, 0x1b, 0xfb, 0xb0, 0x7e, 0xed, 0x4e, 0xf4, 0x75,
+	0xf9, 0x63, 0xa5, 0xff, 0xfa, 0xd8, 0xe2, 0x53, 0x8d, 0x5f, 0x65, 0x50, 0xc4, 0x93, 0x45, 0x50,
+	0x9b, 0x05, 0x73, 0xca, 0xd9, 0x0a, 0xe6, 0x67, 0xa4, 0xe7, 0x79, 0xa7, 0x49, 0x64, 0x10, 0x7d,
+	0x07, 0x8d, 0x59, 0xb0, 0x48, 0xe8, 0x45, 0xa2, 0xcb, 0x5b, 0xf2, 0x76, 0xeb, 0xc5, 0x17, 0xb7,
+	0x0c, 0x55, 0xa7, 0x27, 0xc2, 0x78, 0x53, 0x70, 0x46, 0x6a, 0xbf, 0x82, 0xb5, 0xb2, 0x83, 0x0d,
+	0xed, 0x29, 0xbd, 0xcc, 0x86, 0xf6, 0x94, 0x5e, 0xa2, 0xfb, 0xa0, 0x9c, 0x93, 0xb3, 0x65, 0x76,
+	0xb3, 0x00, 0xaf, 0xaa, 0xdf, 0x48, 0xc6, 0xdf, 0x12, 0xd4, 0x7a, 0x2c, 0xbd, 0x07, 0x70, 0x17,
+	0x4f, 0x9d, 0x89, 0x7d, 0x68, 0xb9, 0xd6, 0x8f, 0x3d, 0x6b, 0x34, 0xb1, 0x87, 0x8e, 0x56, 0x41,
+	0x3a, 0xdc, 0x9f, 0x3a, 0xd8, 0xea, 0x0d, 0xf7, 0x1c, 0xfb, 0xad, 0xd5, 0x77, 0x47, 0xe6, 0xd1,
+	0xc1, 0xd0, 0xec, 0x6b, 0x12, 0xba, 0x07, 0xeb, 0x87, 0xf6, 0x78, 0x6c, 0x3b, 0x7b, 0xb9, 0xb1,
+	0x8a, 0xee, 0x80, 0xda, 0x35, 0xfb, 0xae, 0xed, 0x8c, 0xa6, 0x13, 0x4d, 0xe6, 0x31, 0xe6, 0xa4,
+	0x37, 0x70, 0x9d, 0xe1, 0xc4, 0xdd, 0x1d, 0x4e, 0x9d, 0xbe, 0x56, 0x43, 0x1b, 0x70, 0x4f, 0x18,
+	0xf7, 0x87, 0xb6, 0xe3, 0x62, 0x6b, 0xdf, 0xea, 0x4d, 0xac, 0xbe, 0xa6, 0xa0, 0x4d, 0x68, 0x67,
+	0x29, 0xec, 0x4e, 0x9d, 0x1e, 0xcb, 0xa0, 0x44, 0xac, 0x7f, 0xd4, 0x5f, 0xe4, 0xda, 0x60, 0x97,
+	0x17, 0xe1, 0x4d, 0xc3, 0x02, 0x28, 0x56, 0xc2, 0xff, 0xef, 0xea, 0x5f, 0x12, 0xa8, 0xf9, 0x58,
+	0xa3, 0xc7, 0xa9, 0xcc, 0x82, 0xf8, 0x34, 0xad, 0x30, 0x0f, 0x75, 0x88, 0x4f, 0xd1, 0x4f, 0xa0,
+	0x7d, 0x58, 0xd2, 0x25, 0x75, 0xc3, 0x28, 0x08, 0x69, 0x94, 0x78, 0x34, 0xd6, 0xab, 0xbc, 0xa3,
+	0x5f, 0xad, 0x58, 0x15, 0x9d, 0x37, 0x8c, 0x33, 0xca, 0x29, 0xa2, 0xbb, 0xeb, 0x1f, 0xae, 0x5a,
+	0xdb, 0x5d, 0xb8, 0xff, 0xb1, 0xc0, 0x4f, 0xea, 0xf6, 0xf3, 0xf4, 0x53, 0xf8, 0x5a, 0x79, 0x04,
+	0x4d, 0x31, 0x99, 0xf9, 0x82, 0x6f, 0x70, 0x6c, 0xcf, 0x8d, 0x2f, 0xd3, 0xd2, 0x89, 0xf5, 0xb1,
+	0x22, 0xf0, 0x1f, 0x39, 0x8d, 0x14, 0xb9, 0xdc, 0x1e, 0xc9, 0x92, 0x8a, 0x13, 0xb6, 0x7d, 0xab,
+	0x7c, 0x26, 0x04, 0x60, 0xe5, 0xf4, 0xc9, 0x85, 0x3b, 0x0b, 0x96, 0x8b, 0x84, 0xff, 0x34, 0x28,
+	0xb8, 0xe9, 0x93, 0x8b, 0x1e, 0xc3, 0xe8, 0x19, 0xac, 0x91, 0x59, 0xe2, 0x9d, 0xd3, 0xd4, 0x5f,
+	0xe3, 0xfe, 0x96, 0xb0, 0x89, 0x10, 0x04, 0x35, 0x56, 0x7d, 0xbe, 0xd2, 0x55, 0xcc, 0xcf, 0xe8,
+	0x35, 0x28, 0xcb, 0x98, 0x46, 0xb1, 0x5e, 0xe7, 0xa5, 0x7f, 0xbe, 0x6a, 0xcf, 0xa5, 0x0b, 0x27,
+	0xa6, 0x11, 0x16, 0x24, 0xb6, 0x2c, 0xb2, 0x7e, 0xf2, 0x45, 0x5d, 0xee, 0x6f, 0x1b, 0x9a, 0xbc,
+	0x2b, 0xac, 0xde, 0x4d, 0xe1, 0xcb, 0x70, 0xfb, 0x3c, 0x2d, 0x2d, 0xd3, 0x42, 0x1b, 0xd0, 0x60,
+	0x6a, 0x45, 0x19, 0xea, 0x0c, 0xda, 0x73, 0xa6, 0xc0, 0x4e, 0xfc, 0xf5, 0xa4, 0xab, 0x28, 0xc3,
+	0x45, 0x85, 0xe4, 0x52, 0x85, 0x8c, 0x4d, 0x50, 0xc6, 0xbc, 0x54, 0x2a, 0x28, 0xd8, 0x32, 0xfb,
+	0x47, 0x5a, 0x05, 0x01, 0xd4, 0xd9, 0xec, 0x58, 0x7d, 0x4d, 0x32, 0x4e, 0x33, 0xff, 0x23, 0x78,
+	0x20, 0xc6, 0x6a, 0xd7, 0x76, 0xfa, 0x7c, 0x2a, 0x0f, 0xcc, 0x23, 0x0b, 0x8f, 0xb5, 0x0a, 0x6a,
+	0xc3, 0x43, 0xe1, 0x32, 0x7f, 0x30, 0xed, 0x49, 0xd9, 0x27, 0x15, 0x34, 0xa6, 0x58, 0x76, 0x55,
+	0x91, 0x06, 0x6b, 0x7b, 0xe6, 0xa1, 0xe5, 0xf6, 0xb0, 0x65, 0xb2, 0x09, 0x95, 0x8d, 0x20, 0xeb,
+	0xf6, 0xa7, 0x6f, 0x39, 0xe3, 0x65, 0xba, 0x68, 0xee, 0xc2, 0x1d, 0x71, 0x21, 0x1b, 0xe4, 0xe1,
+	0x74, 0x22, 0x96, 0x8c, 0x30, 0xd9, 0xce, 0xc4, 0xc2, 0x8e, 0x79, 0xe0, 0x5a, 0x18, 0x0f, 0xb1,
+	0x26, 0x19, 0x7f, 0x4a, 0xd0, 0xcc, 0x66, 0x12, 0x7d, 0x06, 0xd5, 0xbc, 0xa0, 0x55, 0x6f, 0xce,
+	0xee, 0x2f, 0x15, 0x92, 0x9f, 0xaf, 0xec, 0x7a, 0xf9, 0xea, 0xae, 0x47, 0x4f, 0x40, 0x9d, 0x45,
+	0x94, 0x24, 0x74, 0x6e, 0x8a, 0xc7, 0x24, 0xe3, 0xc2, 0xc0, 0xbc, 0xe2, 0x27, 0x8a, 0x79, 0x15,
+	0xe1, 0xcd, 0x0d, 0x5c, 0x37, 0x98, 0x8b, 0x67, 0x51, 0x4f, 0x75, 0x53, 0xcc, 0xbe, 0x99, 0xb7,
+	0xb7, 0x1f, 0xeb, 0x8d, 0x2d, 0x99, 0x7d, 0x73, 0x0a, 0xbb, 0x6f, 0xe0, 0x69, 0x12, 0x75, 0x66,
+	0x81, 0xdf, 0x21, 0x61, 0x18, 0xdf, 0x78, 0x88, 0x24, 0xf4, 0xba, 0xeb, 0x63, 0x66, 0x1c, 0x9f,
+	0x78, 0xe1, 0x98, 0xdb, 0x46, 0xd2, 0x5b, 0x35, 0xf7, 0xfe, 0x56, 0x95, 0xc7, 0xe3, 0xd1, 0x1f,
+	0x55, 0x35, 0x0f, 0x7a, 0x57, 0xe7, 0xff, 0xd2, 0x5e, 0xfe, 0x1b, 0x00, 0x00, 0xff, 0xff, 0x11,
+	0x2e, 0xbd, 0xe7, 0x2e, 0x0a, 0x00, 0x00,
+>>>>>>> working on active watcher
 }

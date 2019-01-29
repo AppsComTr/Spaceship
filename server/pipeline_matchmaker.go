@@ -44,19 +44,3 @@ func (p *Pipeline) matchmakerLeave(session Session, envelope *socketapi.Envelope
 	p.matchmaker.Leave(session, incomingData.MatchId)
 	log.Println("MatchLeave received for game: ", incomingData.MatchId)
 }
-
-func (p *Pipeline) broadcastMatch(match *socketapi.MatchEntry, err error) {
-	if err != nil {
-		log.Println(err)
-		session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
-			Code:    int32(socketapi.Error_MATCH_JOIN_REJECTED),
-			Message: "Could not join match.",
-		}}})
-	}
-	//Need to fetch all users session by their ids from gameData and send them msg
-	message := &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchEntry{MatchEntry: match}}
-	for _, user := range match.Users {
-		session := p.sessionHolder.GetByUserID(user.UserId)
-		_ = session.Send(false, 0, message)
-	}
-}

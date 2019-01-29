@@ -26,16 +26,17 @@ type LocalMatchmaker struct {
 	sync.RWMutex
 	redis radix.Client
 	gameHolder *GameHolder
-
+	sessionHolder *SessionHolder
 
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder) Matchmaker {
+func NewLocalMatchMaker(redis *radix.Pool, gameHolder *GameHolder, sessionHolder *SessionHolder) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
 		entries: make(map[string]*socketapi.MatchEntry),
+		sessionHolder: sessionHolder,
 	}
 }
 
@@ -82,6 +83,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				ActiveCount: 1,
 				Users: users,
 				GameName: gameName,
+				Queuekey: queueKey,
 			}
 
 			err = m.redis.Do(radix.Cmd(nil, "LPUSH", queueKey, matchID))
@@ -165,6 +167,8 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				MaxCount: int32(playerCount),
 				ActiveCount: 1,
 				Users: users,
+				GameName: gameName,
+				Queuekey: queueKey,
 			}
 
 			err = m.redis.Do(radix.Cmd(nil, "LPUSH", queueKey, matchID))
@@ -194,7 +198,8 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			m.entries[matchID] = matchEntry
 
 			go func(){
-				// Get a cancel-able context
+				// This routine must be controlled with cancel-able context which comes from main
+				log.Println("find routine-start")
 				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
 				defer cancel()
 
@@ -205,47 +210,50 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 
 				for {
 					select{
+					case <- ctx.Done():
+						log.Println("find routine caught, closing")
+						return
 					case <- time.After(timeout):
-						log.Println("Match search timeout")
-						//TODO inform players match search timeout
-						//broadcastMatch
-
+						log.Println("match search timeout")
+						err := errors.New("match search timeout")
+						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_TIMEOUT))
 						m.clearMatch(queueKey,matchID, matchEntry.Users)
 						return
 					case latestPlayerCount, ok = <- watchChan:
 						if !ok {
-							log.Println("Active game watcher return false")
-							//TODO inform players match error
-							//broadcastMatch
+							log.Println("match search failed")
+							err := errors.New("match search failed")
+							m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 							m.clearMatch(queueKey, matchID, matchEntry.Users)
 							return
 						}else{
 							if latestPlayerCount == -1 {
 								log.Println("Match watcher send -1, error happened inside watcher")
-								//TODO inform players match error
-								//broadcastMatch
-								m.clearMatch(queueKey,matchID, matchEntry.Users)
+								err := errors.New("match search failed")
+								m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+								m.clearMatch(queueKey, matchID, matchEntry.Users)
 								return
 							}else if latestPlayerCount == playerCount {
-								matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
-								m.entries[matchID] = matchEntry
 								log.Println("found enough players for this match: ", matchID)
-								//TODO inform players to join game or do join here for each user
 
-								err = m.redis.Do(radix.Cmd(nil, "LREM", queueKey, "0", matchID))//FIX queueKey
+								matchEntry.State = int32(socketapi.MatchEntry_MATCH_AWAITING_PLAYERS)
+								m.entries[matchID] = matchEntry
+
+								m.broadcastMatch(session, matchEntry, "", nil, 0)
+
+								err = m.redis.Do(radix.Cmd(nil, "LREM", queueKey, "0", matchID))
 								if err != nil {
-									log.Println("Redis LREM: ", err)
+									log.Println("Redis LREM queueKey: ", err)
 								}
 
 								return
 							}else{
 								log.Println("waiting players for this match: ", matchID)
-								//TODO inform players about changes with matchentry data
+								m.broadcastMatch(session, matchEntry, "", nil, 0)
 							}
 						}
 					}
 				}
-
 			}()
 
 			return matchEntry, nil
@@ -306,21 +314,20 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 	} else {
 		defer mutex.Unlock()
 	}
-}
 
-func (m *LocalMatchmaker) Join(session Session, matchEntryID string) (*socketapi.GameData,error){
 	m.RLock() //TODO lock must be applied on matchID Key!
 	defer m.RUnlock()
 
+	var gameData *socketapi.GameData
+	var err error
 	game := "active"
 
-	matchEntry, ok := m.entries[matchEntryID]
+	matchEntry, ok := m.entries[matchID]
 	if !ok {
 		return nil, errors.New("MatchID not found!")
 	}
 
 	if game == "passive" {
-		//TODO Call game.MatchmakerCheck() if valid ->
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 
@@ -339,14 +346,27 @@ func (m *LocalMatchmaker) Join(session Session, matchEntryID string) (*socketapi
 				}
 			}
 
-			m.entries[matchEntryID] = matchEntry
+			m.entries[matchID] = matchEntry
 
 			break
 		case int32(socketapi.MatchEntry_GAME_CREATED):
 			//TODO we have enough player to start match, matchEntry data need to be validated via game.Matchmaked?
+
 			for _,user := range matchEntry.Users {
-				if user.UserId == session.UserID() {
+				if user.UserId == session.UserID() && user.State != int32(socketapi.MatchEntry_MatchUser_JOINED){
 					user.State = int32(socketapi.MatchEntry_MatchUser_JOINED)
+					m.entries[matchID] = matchEntry
+
+					//TODO game.Matchmaked validate every user join
+					m.broadcastMatch(session, matchEntry, session.UserID(), nil, 0)
+
+					//We should trigger relevant game controllers methods
+					gameData, err = JoinGame(matchEntry.Game, m.gameHolder, session)
+					if err != nil {
+						return nil, err
+					}
+
+					break
 				}
 			}
 
@@ -361,19 +381,70 @@ func (m *LocalMatchmaker) Join(session Session, matchEntryID string) (*socketapi
 
 			break
 		}
+		return gameData,nil
 	}else if game == "active" {
+		if matchEntry.State == int32(socketapi.MatchEntry_MATCH_AWAITING_PLAYERS) {
+			for _,user := range matchEntry.Users {
+				if user.UserId == session.UserID() && user.State != int32(socketapi.MatchEntry_MatchUser_JOINED) {
+					user.State = int32(socketapi.MatchEntry_MatchUser_JOINED)
+				}
+			}
+			matchEntry.State = int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS)
+			m.entries[matchID] = matchEntry
+
+
+			gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
+			if err != nil {
+				m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+				m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+			}
+
+			matchEntry.Game = gameObject.Id
+
+			go func(){
+				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
+				defer cancel()
+
+				watchChan := Watcher(ctx,m.redis,matchID+":joins")
+				timeout := time.Duration(10 * time.Second)
+				latestPlayerCount := -1
+				var ok bool
+
+				for{
+					select {
+					case <- time.After(timeout):
+
+						return
+					case latestPlayerCount,ok = <- watchChan:
+						if !ok {
+							log.Println("shit")
+						}else{
+							if latestPlayerCount == -1 {
+								log.Println("Match join watcher send -1, error happened inside watcher")
+								err := errors.New("match join failed")
+								m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+								m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+								return
+							}else if int32(latestPlayerCount) == matchEntry.MaxCount {
+
+							}
+						}
+						return
+					}
+
+				}
+			}()
+		}
+
+
 		//Players received game data and moved to game screen
 		//TODO update player states
 		//TODO inform players
+		return nil,nil//Maybe return gameData with GAME_WAITING_CREATE state?
 	}
 
-	//We should trigger relevant game controllers methods
-	gameData, err := JoinGame(matchEntry.Game, m.gameHolder, session)
-	if err != nil {
-		return nil, err
-	}
-
-	return gameData,nil
+	log.Println("if it works, problem!")
+	return nil, nil//bad pattern: return error
 }
 
 func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
@@ -459,6 +530,37 @@ func (m *LocalMatchmaker) LeaveAll(session session) error {
 	//inform opponents players
 	//notify game.leave
 	return nil
+}
+
+//Anti pattern
+func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.MatchEntry, selfUserID string, err error, code int32) {
+	if err != nil {
+		log.Println(err)
+
+		_ = session.Send(false, 0, &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchError{
+			MatchError: &socketapi.MatchError{
+				Code: code,
+				Message: err.Error(),
+			},
+		}})
+	}
+
+	if selfUserID != "" {
+		index := 0
+		for i, user := range match.Users {
+			if selfUserID == user.UserId {
+				index = i
+			}
+		}
+		match.Users = append(match.Users[:index], match.Users[index+1:]...)
+	}
+
+	//Need to fetch all users session by their ids from gameData and send them msg
+	message := &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchEntry{MatchEntry: match}}
+	for _, user := range match.Users {
+		session := m.sessionHolder.GetByUserID(user.UserId)
+		_ = session.Send(false, 0, message)
+	}
 }
 
 

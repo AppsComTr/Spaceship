@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-//chan return timeout or change
 func Watcher(ctx context.Context, redis *radix.Pool, key string) <- chan int {
 	watchChan := make(chan int)
 

@@ -23,4 +23,5 @@ require (
 	golang.org/x/net v0.0.0-20190107210223-45ffb0cd1ba0
 	google.golang.org/genproto v0.0.0-20181221175505-bd9b4fb69e2f
 	google.golang.org/grpc v1.17.0
+	rsc.io/qr v0.2.0
 )
