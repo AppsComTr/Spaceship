@@ -1,4 +1,4 @@
-package test
+package game
 
 import (
 	"encoding/json"
@@ -107,3 +107,7 @@ func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.Mat
 func (tg RTGame) GetGameSpecs() server.GameSpecs {
 	return rtGameSpecs
 }
+
+
+
+

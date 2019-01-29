@@ -9,6 +9,7 @@ import (
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
 	"google.golang.org/grpc"
+	"log"
 	"net"
 	"runtime"
 	"spaceship/api"
@@ -39,12 +40,11 @@ func NewServer(t *testing.T) (*server.Server) {
 	}
 	redis := redisConnect(t, config)
 
-	var pipeline *server.Pipeline
 	db := server.ConnectDB(config)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonpbMarshaler, jsonpbUnmarshaler)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, pipeline)
-	pipeline = server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
+	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	gameHolder.Add(&PTGame{})
 	gameHolder.Add(&RTGame{})
@@ -72,6 +72,25 @@ func CreateSession(t *testing.T) (*api.Session) {
 
 }
 
+func CreateSessionChan(failChan chan string) (*api.Session) {
+
+	conn, err := grpc.Dial("localhost:7349", grpc.WithInsecure())
+	if err != nil {
+		failChan <- err.Error()
+	}
+
+	client := apigrpc.NewSpaceShipClient(conn)
+	session, err := client.AuthenticateFingerprint(context.Background(), &api.AuthenticateFingerprint{
+		Fingerprint: generateUUID(),
+	})
+	if err != nil {
+		failChan <- err.Error()
+	}
+
+	return session
+
+}
+
 func CreateSocketConn(t *testing.T, token string) (*websocket.Conn, chan []byte) {
 
 	c, _, err := websocket.DefaultDialer.Dial("ws://localhost:7350/ws?token=" + token, nil)
@@ -92,6 +111,38 @@ func CreateSocketConn(t *testing.T, token string) (*websocket.Conn, chan []byte)
 
 				}else{
 					t.Fatal(err)
+				}
+				//Even if connection was closed or error occured we should break the loop
+				break
+			}
+			onMessageChan <- message
+		}
+	}()
+
+	return c, onMessageChan
+
+}
+
+func CreateSocketConnChan(failChan chan string, token string) (*websocket.Conn, chan []byte) {
+
+	c, _, err := websocket.DefaultDialer.Dial("ws://localhost:7350/ws?token=" + token, nil)
+	if err != nil {
+		failChan <- err.Error()
+	}
+
+	onMessageChan := make(chan []byte)
+
+	go func() {
+		defer close(onMessageChan)
+		for {
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived) {
+
+				}else if e, ok := err.(*net.OpError); ok || e.Err.Error() == "use of closed network connection" {
+
+				}else{
+					failChan <- err.Error()
 				}
 				//Even if connection was closed or error occured we should break the loop
 				break
@@ -131,6 +182,7 @@ func ReadMessage(failChan chan string, onMessageChan chan []byte) (socketapi.Env
 	payload = <- onMessageChan
 
 	if err := jsonpbUnmarshaler.Unmarshal(bytes.NewReader(payload), &env); err != nil {
+		log.Println(payload)
 		failChan <- err.Error()
 		runtime.Goexit()
 	}

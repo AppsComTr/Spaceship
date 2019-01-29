@@ -116,7 +116,7 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 		return
 	}
 	s.conn.SetPongHandler(func(string) error {
-		log.Println("pong received")
+		//log.Println("pong received")
 		s.resetPingTimer()
 		return nil
 	})

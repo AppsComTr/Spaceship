@@ -33,13 +33,11 @@ func main()  {
 	}
 	redis := redisConnect(config)
 
-	var pipeline *server.Pipeline
-
 	db := server.ConnectDB(config)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, pipeline)
-	pipeline = server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
+	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	initGames(gameHolder)
 
@@ -62,6 +60,7 @@ func main()  {
 
 func initGames(holder *server.GameHolder) {
 	holder.Add(&game.ExampleGame{})
+	holder.Add(&game.RTGame{})
 }
 
 

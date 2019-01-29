@@ -14,7 +14,7 @@ import (
 
 type Matchmaker interface {
 	Find(session Session,gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error)
-	Join(session Session, matchID string) (*socketapi.GameData, error)
+	Join(pipeline *Pipeline, session Session, matchID string) (*socketapi.GameData, error)
 	Leave(session Session, matchID string) error
 }
 
@@ -22,17 +22,15 @@ type LocalMatchmaker struct {
 	sync.RWMutex
 	redis radix.Client
 	gameHolder *GameHolder
-	pipeline *Pipeline
 
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, pipeline *Pipeline) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
 		entries: make(map[string]*socketapi.MatchEntry),
-		pipeline: pipeline,
 	}
 }
 
@@ -126,7 +124,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 	}
 }
 
-func (m *LocalMatchmaker) Join(session Session, matchID string) (*socketapi.GameData,error){
+func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID string) (*socketapi.GameData,error){
 	rs := redsyncradix.New([]radix.Client{m.redis})
 	mutex := rs.NewMutex("lock|" + matchID)
 	if err := mutex.Lock(); err != nil {
@@ -147,7 +145,7 @@ func (m *LocalMatchmaker) Join(session Session, matchID string) (*socketapi.Game
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 			//game.create
-			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, m.pipeline, session)
+			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)
 			if err != nil {
 				return nil, err
 			}

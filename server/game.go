@@ -29,6 +29,7 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 		Id: matchID,
 		Name: modeName,
 		CreatedAt: time.Now().Unix(),
+		UserIDs: make([]string, 0),
 	}
 
 	game := holder.Get(modeName)
@@ -65,7 +66,7 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 				select {
 				case <- ticker.C:
 
-					if !loopGame(holder, gameData, game, ticker, pipeline){
+					if !loopGame(holder, gameData.Id, game, ticker, pipeline){
 						return
 					}
 
@@ -79,10 +80,10 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 	return gameData, nil
 }
 
-func loopGame(holder *GameHolder, gameData *socketapi.GameData, game GameController, ticker *time.Ticker, pipeline *Pipeline) bool {
+func loopGame(holder *GameHolder, gameID string, game GameController, ticker *time.Ticker, pipeline *Pipeline) bool {
 
 	rs := redsyncradix.New([]radix.Client{holder.redis})
-	mutex := rs.NewMutex("lock|" + gameData.Id)
+	mutex := rs.NewMutex("lock|" + gameID)
 	if err := mutex.Lock(); err != nil {
 		log.Println(err.Error())
 	} else {
@@ -90,21 +91,21 @@ func loopGame(holder *GameHolder, gameData *socketapi.GameData, game GameControl
 	}
 
 	var gameDataS string
-	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + gameData.Id))
+	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + gameID))
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	var rGameData *socketapi.GameData
-	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), rGameData)
+	var rGameData socketapi.GameData
+	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), &rGameData)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
 	queuedDatasS := make([]string, 0)
-	err = holder.redis.Do(radix.Cmd(&queuedDatasS, "LRANGE", "game|update|" + gameData.Id, "0", "-1"))
+	err = holder.redis.Do(radix.Cmd(&queuedDatasS, "LRANGE", "game|update|" + gameID, "0", "-1"))
 	if err != nil {
 		log.Println(err)
 		return false
@@ -124,14 +125,14 @@ func loopGame(holder *GameHolder, gameData *socketapi.GameData, game GameControl
 
 	}
 
-	isFinished := game.Loop(rGameData, queuedDatas)
+	isFinished := game.Loop(&rGameData, queuedDatas)
 
 	rGameData.UpdatedAt = time.Now().Unix()
 
 	if isFinished {
 
 		gameDataDB := model.GameData{}
-		gameDataDB.MapFromPB(gameData)
+		gameDataDB.MapFromPB(&rGameData)
 
 		conn := pipeline.db.Copy()
 		defer conn.Close()
@@ -152,7 +153,7 @@ func loopGame(holder *GameHolder, gameData *socketapi.GameData, game GameControl
 
 	}else{
 
-		gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
+		gameDataS, err = holder.jsonProtoMarshler.MarshalToString(&rGameData)
 		if err != nil {
 			log.Println(err)
 			return false
@@ -165,9 +166,9 @@ func loopGame(holder *GameHolder, gameData *socketapi.GameData, game GameControl
 
 	}
 
-	_ = holder.redis.Do(radix.Cmd(nil, "DEL", "game|update|" + gameData.Id))
+	_ = holder.redis.Do(radix.Cmd(nil, "DEL", "game|update|" + gameID))
 
-	pipeline.broadcastGame(gameData)
+	pipeline.broadcastGame(&rGameData)
 
 	return !isFinished
 
@@ -219,7 +220,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 		return nil, err
 	}
 
-	err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameData.Id, gameDataS))
+	err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameID, gameDataS))
 	if err != nil {
 		return nil, err
 	}

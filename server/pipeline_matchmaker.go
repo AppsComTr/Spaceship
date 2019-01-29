@@ -24,7 +24,7 @@ func (p *Pipeline) matchmakerFind(session Session, envelope *socketapi.Envelope)
 func (p *Pipeline) matchmakerJoin(session Session, envelope *socketapi.Envelope){
 	incomingData := envelope.GetMatchJoin()
 	//TODO validate incomingData with game specs
-	game, err := p.matchmaker.Join(session, incomingData.MatchId)
+	game, err := p.matchmaker.Join(p, session, incomingData.MatchId)
 	if err != nil {
 		log.Println(err)
 		session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
