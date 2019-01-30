@@ -26,6 +26,8 @@ var (
 
 func main()  {
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	config := &server.Config{}
 	err := configor.Load(config, "config.yml")
 	if err != nil {
@@ -36,8 +38,13 @@ func main()  {
 	db := server.ConnectDB(config)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler)
+<<<<<<< HEAD
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
+=======
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder)
+	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker)
+>>>>>>> join watcher added
 
 	initGames(gameHolder)
 

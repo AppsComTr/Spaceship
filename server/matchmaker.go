@@ -217,7 +217,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 						log.Println("match search timeout")
 						err := errors.New("match search timeout")
 						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_TIMEOUT))
-						m.clearMatch(queueKey,matchID, matchEntry.Users)
+						m.clearMatch(queueKey, matchID, matchEntry.Users)
 						return
 					case latestPlayerCount, ok = <- watchChan:
 						if !ok {
@@ -225,14 +225,13 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 							err := errors.New("match search failed")
 							m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 							m.clearMatch(queueKey, matchID, matchEntry.Users)
-							return
 						}else{
 							if latestPlayerCount == -1 {
 								log.Println("Match watcher send -1, error happened inside watcher")
+
 								err := errors.New("match search failed")
 								m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 								m.clearMatch(queueKey, matchID, matchEntry.Users)
-								return
 							}else if latestPlayerCount == playerCount {
 								log.Println("found enough players for this match: ", matchID)
 
@@ -245,8 +244,6 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 								if err != nil {
 									log.Println("Redis LREM queueKey: ", err)
 								}
-
-								return
 							}else{
 								log.Println("waiting players for this match: ", matchID)
 								m.broadcastMatch(session, matchEntry, "", nil, 0)
@@ -330,9 +327,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 	if game == "passive" {
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
-
 			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)
-
 			if err != nil {
 				return nil, err
 			}
@@ -342,7 +337,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 
 			for _,user := range matchEntry.Users {
 				if user.UserId == session.UserID() {
-					user.State = int32(socketapi.MatchEntry_MatchUser_JOINED)
+					user.State = int32(socketapi.MatchEntry_MatchUser_READY)
 				}
 			}
 
@@ -353,8 +348,8 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 			//TODO we have enough player to start match, matchEntry data need to be validated via game.Matchmaked?
 
 			for _,user := range matchEntry.Users {
-				if user.UserId == session.UserID() && user.State != int32(socketapi.MatchEntry_MatchUser_JOINED){
-					user.State = int32(socketapi.MatchEntry_MatchUser_JOINED)
+				if user.UserId == session.UserID() && user.State == int32(socketapi.MatchEntry_MatchUser_NOT_READY){
+					user.State = int32(socketapi.MatchEntry_MatchUser_READY)
 					m.entries[matchID] = matchEntry
 
 					//TODO game.Matchmaked validate every user join
@@ -385,27 +380,26 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 	}else if game == "active" {
 		if matchEntry.State == int32(socketapi.MatchEntry_MATCH_AWAITING_PLAYERS) {
 			for _,user := range matchEntry.Users {
-				if user.UserId == session.UserID() && user.State != int32(socketapi.MatchEntry_MatchUser_JOINED) {
-					user.State = int32(socketapi.MatchEntry_MatchUser_JOINED)
+				if user.UserId == session.UserID() && user.State == int32(socketapi.MatchEntry_MatchUser_NOT_READY) {
+					user.State = int32(socketapi.MatchEntry_MatchUser_READY)
+
+					err = m.redis.Do(radix.Cmd(nil, "SADD", matchID+":joins", session.UserID()))
+					if err != nil {
+						log.Println("Redis SADD matchid:joins: ", err)
+						return nil, err
+					}
+
+					matchEntry.State = int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS)
+					m.entries[matchID] = matchEntry
+					break
 				}
 			}
-			matchEntry.State = int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS)
-			m.entries[matchID] = matchEntry
-
-
-			gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
-			if err != nil {
-				m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
-				m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
-			}
-
-			matchEntry.Game = gameObject.Id
 
 			go func(){
 				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
 				defer cancel()
 
-				watchChan := Watcher(ctx,m.redis,matchID+":joins")
+				watchChan := Watcher(ctx, m.redis, matchID+":joins")
 				timeout := time.Duration(10 * time.Second)
 				latestPlayerCount := -1
 				var ok bool
@@ -413,20 +407,39 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 				for{
 					select {
 					case <- time.After(timeout):
-
+						log.Println("match join timeout")
+						err := errors.New("match join timeout")
+						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_TIMEOUT))
+						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
 						return
 					case latestPlayerCount,ok = <- watchChan:
 						if !ok {
-							log.Println("shit")
+							log.Println("match join failed")
+							err := errors.New("match join failed")
+							m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+							m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
 						}else{
 							if latestPlayerCount == -1 {
 								log.Println("Match join watcher send -1, error happened inside watcher")
+
 								err := errors.New("match join failed")
 								m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 								m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
-								return
 							}else if int32(latestPlayerCount) == matchEntry.MaxCount {
+								log.Println("All players joined, state sync, publish game")
 
+								gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
+								if err != nil {
+									m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+									m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+								}
+
+								matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
+								matchEntry.Game = gameObject.Id
+								m.entries[matchID] = matchEntry
+							}else {
+								log.Println("Waiting players to join")
+								m.broadcastMatch(session, matchEntry, "", nil, 0)
 							}
 						}
 						return
@@ -434,12 +447,22 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 
 				}
 			}()
+		}else if matchEntry.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) {
+			for _,user := range matchEntry.Users {
+				if user.UserId == session.UserID() && user.State == int32(socketapi.MatchEntry_MatchUser_NOT_READY) {
+					user.State = int32(socketapi.MatchEntry_MatchUser_READY)
+
+					err = m.redis.Do(radix.Cmd(nil, "SADD", matchID+":joins", session.UserID()))
+					if err != nil {
+						log.Println("Redis SADD matchid:joins: ", err)
+						return nil, err
+					}
+
+					m.entries[matchID] = matchEntry
+					break
+				}
+			}
 		}
-
-
-		//Players received game data and moved to game screen
-		//TODO update player states
-		//TODO inform players
 		return nil,nil//Maybe return gameData with GAME_WAITING_CREATE state?
 	}
 
@@ -584,15 +607,20 @@ func (m *LocalMatchmaker) clearMatch(queueKey string, matchID string, users []*s
 		log.Println("Redis DEL: ", err)
 	}
 
+	err = m.redis.Do(radix.Cmd(nil, "DEL", matchID+":joins"))
+	if err != nil {
+		log.Println("Redis DEL: ", err)
+	}
+
 	//TODO redis multi
 	for _,user := range users {
-		err = m.redis.Do(radix.Cmd(nil, "SREM", "pm:"+user.UserId))
+		err = m.redis.Do(radix.Cmd(nil, "SREM", "pm:"+user.UserId, matchID))
 		if err != nil {
-			log.Println("Redis DEL: ", err)
+			log.Println("Redis SREM:pm ", err)
 		}
-		err = m.redis.Do(radix.Cmd(nil, "SREM", "pam:"+user.UserId))
+		err = m.redis.Do(radix.Cmd(nil, "SREM", "pam:"+user.UserId, matchID))
 		if err != nil {
-			log.Println("Redis DEL: ", err)
+			log.Println("Redis SREM:pam ", err)
 		}
 	}
 

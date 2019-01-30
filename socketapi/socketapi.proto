@@ -107,8 +107,8 @@ message MatchEntry {
 
     message MatchUser {
         enum State {
-            READY = 0;
-            JOINED = 1;
+            NOT_READY = 0;
+            READY = 2;
         }
         string user_id = 1;
         string username = 2;
