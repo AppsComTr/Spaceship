@@ -37,6 +37,7 @@ func main() {
 	leaderboard := server.NewLeaderboard(db)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard)
+	leaderboard.SetGameHolder(gameHolder)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
 

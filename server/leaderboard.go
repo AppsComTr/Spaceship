@@ -10,12 +10,17 @@ import (
 
 type Leaderboard struct {
 	db *mgo.Session
+	gameHolder *GameHolder
 }
 
 func NewLeaderboard(db *mgo.Session) *Leaderboard {
 	return &Leaderboard{
 		db: db,
 	}
+}
+
+func (l *Leaderboard) SetGameHolder(gameHolder *GameHolder) {
+	l.gameHolder = gameHolder
 }
 
 func (l *Leaderboard) Score(userID string, mode string, score int64) error {
@@ -133,9 +138,10 @@ func (l Leaderboard) GetScores(typeName string, mode string, page int, itemCount
 
 	scores := make([]model.LeaderboardModel, 0)
 
-	//TODO: we can check mode name if exists from game holder
+	game := l.gameHolder.Get(mode)
+
 	var modeQ *string
-	if mode != "all" {
+	if mode != "all" || game == nil {
 		modeQ = &mode
 	}
 
