@@ -20,7 +20,6 @@ func Watcher(ctx context.Context, redis *radix.Pool, key string) <- chan int {
 				log.Println("Watcher closes channel")
 				return
 			default:
-				log.Println("Watcher Default")
 				err := redis.Do(radix.Cmd(&result, "SCARD", key))
 				if err != nil {
 					log.Println("Watcher SCARD err: ", err)

@@ -75,6 +75,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			users = append(users, &socketapi.MatchEntry_MatchUser{
 				UserId:session.UserID(),
 				Username: session.Username(),
+				State: int32(socketapi.MatchEntry_MatchUser_NOT_READY),
 			})
 
 			matchEntry := &socketapi.MatchEntry{
@@ -84,6 +85,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				Users: users,
 				GameName: gameName,
 				Queuekey: queueKey,
+				State: int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS),
 			}
 
 			err = m.redis.Do(radix.Cmd(nil, "LPUSH", queueKey, matchID))
@@ -120,6 +122,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				matchEntry.ActiveCount++
 				matchEntry.Users = append(matchEntry.Users, &socketapi.MatchEntry_MatchUser{
 					UserId:session.UserID(),
+					State: int32(socketapi.MatchEntry_MatchUser_NOT_READY),
 				})
 				m.entries[matchID] = matchEntry
 
@@ -160,6 +163,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			users = append(users, &socketapi.MatchEntry_MatchUser{
 				UserId: session.UserID(),
 				Username: session.Username(),
+				State: int32(socketapi.MatchEntry_MatchUser_NOT_READY),
 			})
 
 			matchEntry := &socketapi.MatchEntry{
@@ -169,6 +173,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				Users: users,
 				GameName: gameName,
 				Queuekey: queueKey,
+				State: int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS),
 			}
 
 			err = m.redis.Do(radix.Cmd(nil, "LPUSH", queueKey, matchID))
@@ -198,33 +203,22 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			m.entries[matchID] = matchEntry
 
 			go func(){
-				// This routine must be controlled with cancel-able context which comes from main
-				log.Println("find routine-start")
 				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
-				defer cancel()
 
-				watchChan := Watcher(ctx,m.redis,matchID)
-				timeout := time.Duration(30 * time.Second)
+				watchChan := Watcher(ctx, m.redis, matchID)
+				ticker := time.NewTicker(time.Second * time.Duration(30))
 				latestPlayerCount := -1
 				var ok bool
 
 				for {
 					select{
-					case <- ctx.Done():
-						log.Println("find routine caught, closing")
-						return
-					case <- time.After(timeout):
-						log.Println("match search timeout")
-						err := errors.New("match search timeout")
-						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_TIMEOUT))
-						m.clearMatch(queueKey, matchID, matchEntry.Users)
-						return
 					case latestPlayerCount, ok = <- watchChan:
 						if !ok {
 							log.Println("match search failed")
 							err := errors.New("match search failed")
 							m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 							m.clearMatch(queueKey, matchID, matchEntry.Users)
+							return
 						}else{
 							if latestPlayerCount == -1 {
 								log.Println("Match watcher send -1, error happened inside watcher")
@@ -232,6 +226,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 								err := errors.New("match search failed")
 								m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 								m.clearMatch(queueKey, matchID, matchEntry.Users)
+								return
 							}else if latestPlayerCount == playerCount {
 								log.Println("found enough players for this match: ", matchID)
 
@@ -244,11 +239,19 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 								if err != nil {
 									log.Println("Redis LREM queueKey: ", err)
 								}
+								return
 							}else{
 								log.Println("waiting players for this match: ", matchID)
 								m.broadcastMatch(session, matchEntry, "", nil, 0)
 							}
 						}
+					case <- ticker.C:
+						log.Println("match search timeout")
+						err := errors.New("match search timeout")
+						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_TIMEOUT))
+						m.clearMatch(queueKey, matchID, matchEntry.Users)
+						cancel()
+						return
 					}
 				}
 			}()
@@ -267,6 +270,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				matchEntry.ActiveCount++
 				matchEntry.Users = append(matchEntry.Users, &socketapi.MatchEntry_MatchUser{
 					UserId:session.UserID(),
+					State: int32(socketapi.MatchEntry_MatchUser_NOT_READY),
 				})
 
 				err = m.redis.Do(radix.Cmd(nil, "SADD", matchID, session.UserID()))
@@ -328,11 +332,12 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)
+
 			if err != nil {
 				return nil, err
 			}
 
-			matchEntry.Game = gameObject.Id
+			matchEntry.Game = gameData.Id
 			matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
 
 			for _,user := range matchEntry.Users {
@@ -376,6 +381,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 
 			break
 		}
+
 		return gameData,nil
 	}else if game == "active" {
 		if matchEntry.State == int32(socketapi.MatchEntry_MATCH_AWAITING_PLAYERS) {
@@ -389,6 +395,19 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 						return nil, err
 					}
 
+					gameData, err = NewGame(matchEntry.GameName, m.gameHolder, session)
+					if err != nil {
+						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+					}
+					matchEntry.Game = gameData.Id
+
+					gameData, err = JoinGame(matchEntry.Game, m.gameHolder, session)
+					if err != nil {
+						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+					}
+
 					matchEntry.State = int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS)
 					m.entries[matchID] = matchEntry
 					break
@@ -397,56 +416,52 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 
 			go func(){
 				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
-				defer cancel()
 
 				watchChan := Watcher(ctx, m.redis, matchID+":joins")
-				timeout := time.Duration(10 * time.Second)
+				ticker := time.NewTicker(time.Second * time.Duration(30))
 				latestPlayerCount := -1
 				var ok bool
 
 				for{
 					select {
-					case <- time.After(timeout):
-						log.Println("match join timeout")
-						err := errors.New("match join timeout")
-						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_TIMEOUT))
-						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
-						return
 					case latestPlayerCount,ok = <- watchChan:
 						if !ok {
 							log.Println("match join failed")
 							err := errors.New("match join failed")
 							m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 							m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+							return
 						}else{
 							if latestPlayerCount == -1 {
 								log.Println("Match join watcher send -1, error happened inside watcher")
-
 								err := errors.New("match join failed")
 								m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 								m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+								return
 							}else if int32(latestPlayerCount) == matchEntry.MaxCount {
 								log.Println("All players joined, state sync, publish game")
 
-								gameObject, err := NewGame(matchEntry.GameName, m.gameHolder, session)
-								if err != nil {
-									m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
-									m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
-								}
-
 								matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
-								matchEntry.Game = gameObject.Id
 								m.entries[matchID] = matchEntry
+
+								m.broadcastMatch(session,matchEntry, "", nil, 0)
+								return
 							}else {
 								log.Println("Waiting players to join")
 								m.broadcastMatch(session, matchEntry, "", nil, 0)
 							}
 						}
+					case <- ticker.C:
+						log.Println("match join timeout")
+						err := errors.New("match join timeout")
+						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_TIMEOUT))
+						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+						cancel()
 						return
 					}
-
 				}
 			}()
+
 		}else if matchEntry.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) {
 			for _,user := range matchEntry.Users {
 				if user.UserId == session.UserID() && user.State == int32(socketapi.MatchEntry_MatchUser_NOT_READY) {
@@ -458,12 +473,19 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 						return nil, err
 					}
 
+					gameData, err = JoinGame(matchEntry.Game, m.gameHolder, session)
+					if err != nil {
+						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
+						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
+					}
+
 					m.entries[matchID] = matchEntry
 					break
 				}
 			}
 		}
-		return nil,nil//Maybe return gameData with GAME_WAITING_CREATE state?
+
+		return gameData,nil
 	}
 
 	log.Println("if it works, problem!")
@@ -558,14 +580,13 @@ func (m *LocalMatchmaker) LeaveAll(session session) error {
 //Anti pattern
 func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.MatchEntry, selfUserID string, err error, code int32) {
 	if err != nil {
-		log.Println(err)
-
 		_ = session.Send(false, 0, &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchError{
 			MatchError: &socketapi.MatchError{
 				Code: code,
 				Message: err.Error(),
 			},
 		}})
+		return
 	}
 
 	if selfUserID != "" {
