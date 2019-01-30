@@ -22,7 +22,7 @@ func (as *Server) GetLeaderboard(context context.Context, request *api.Leaderboa
 
 	response := &api.LeaderboardResponse{
 		Page: int32(page),
-		HasNextPage: false,
+		HasNextPage: true,
 	}
 
 	scores, err := as.leaderboard.GetScores(request.Type, request.Mode, page, itemPerPage)

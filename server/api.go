@@ -99,6 +99,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 			}
 			return metadata.MD(p)
 		}),
+		grpcRuntime.WithMarshalerOption(grpcRuntime.MIMEWildcard, &grpcRuntime.JSONPb{OrigName: true, EmitDefaults: true}),
 	)
 
 	dialAddr := fmt.Sprintf("127.0.0.1:%d", port-1)
