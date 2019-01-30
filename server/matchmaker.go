@@ -31,7 +31,7 @@ type LocalMatchmaker struct {
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis *radix.Pool, gameHolder *GameHolder, sessionHolder *SessionHolder) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
@@ -316,9 +316,6 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 		defer mutex.Unlock()
 	}
 
-	m.RLock() //TODO lock must be applied on matchID Key!
-	defer m.RUnlock()
-
 	var gameData *socketapi.GameData
 	var err error
 	game := "active"
@@ -331,7 +328,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 	if game == "passive" {
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
-			gameObject, err := NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)
+			gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)//TODO pipeline is anti-pattern argument here
 
 			if err != nil {
 				return nil, err
@@ -369,16 +366,6 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 					break
 				}
 			}
-
-
-			delete(m.entries, matchID)// only clear when last player joined
-
-
-			m.entries[matchEntryID] = matchEntry
-			//TODO Opponent join event
-			//TODO inform players
-			//game.Matchmaked validate every user join
-
 			break
 		}
 
@@ -395,7 +382,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 						return nil, err
 					}
 
-					gameData, err = NewGame(matchEntry.GameName, m.gameHolder, session)
+					gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)//TODO pipeline is anti-pattern argument here
 					if err != nil {
 						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
@@ -493,8 +480,6 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 }
 
 func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
-
-
 	rs := redsyncradix.New([]radix.Client{m.redis})
 	mutex := rs.NewMutex("lock|" + matchID)
 	if err := mutex.Lock(); err != nil {
@@ -502,10 +487,6 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 	} else {
 		defer mutex.Unlock()
 	}
-
-
-	m.Lock() //TODO lock must be applied on matchID Key!
-	defer m.Unlock()
 
 	var isMember int
 	err := m.redis.Do(radix.Cmd(&isMember, "SISMEMBER", "pm:"+session.UserID()))
@@ -607,17 +588,10 @@ func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.Match
 	}
 }
 
-
-func (m *LocalMatchmaker) generateQueueKey(gameName string, queueProperties map[string]string) string {
-	k := fmt.Sprintf("gq:%s", gameName)
-	for _,v := range queueProperties {
-		k += ":" + v
-	}
-	return k
-}
-
 //TODO Muting errors inside method maybe bad idea
 func (m *LocalMatchmaker) clearMatch(queueKey string, matchID string, users []*socketapi.MatchEntry_MatchUser){
+	log.Println("clearMatch", queueKey, matchID)
+
 	err := m.redis.Do(radix.Cmd(nil, "LREM", queueKey, "0", matchID))
 	if err != nil {
 		log.Println("Redis LREM: ", err)
@@ -646,4 +620,12 @@ func (m *LocalMatchmaker) clearMatch(queueKey string, matchID string, users []*s
 	}
 
 	delete(m.entries, matchID)
+}
+
+func (m *LocalMatchmaker) generateQueueKey(gameName string, queueProperties map[string]string) string {
+	k := fmt.Sprintf("gq:%s", gameName)
+	for _,v := range queueProperties {
+		k += ":" + v
+	}
+	return k
 }

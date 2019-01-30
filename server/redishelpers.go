@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Watcher(ctx context.Context, redis *radix.Pool, key string) <- chan int {
+func Watcher(ctx context.Context, redis radix.Client, key string) <- chan int {
 	watchChan := make(chan int)
 
 	go func(){
