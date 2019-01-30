@@ -34,6 +34,7 @@ type Server struct {
 	grpcGatewayServer    *http.Server
 	config *Config
 	gameHolder *GameHolder
+	leaderboard *Leaderboard
 }
 
 func (s *Server) Stop() {
@@ -44,7 +45,7 @@ func (s *Server) Stop() {
 	s.grpcServer.GracefulStop()
 }
 
-func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, db *mgo.Session) *Server {
+func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, db *mgo.Session, leaderboard *Leaderboard) *Server {
 
 	port := config.Port
 
@@ -66,6 +67,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		config: config,
 		gameHolder: gameHolder,
 		db: db,
+		leaderboard: leaderboard,
 	}
 
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)

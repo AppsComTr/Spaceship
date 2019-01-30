@@ -24,7 +24,7 @@ var (
 	}
 )
 
-func main()  {
+func main() {
 
 	config := &server.Config{}
 	err := configor.Load(config, "config.yml")
@@ -34,14 +34,15 @@ func main()  {
 	redis := redisConnect(config)
 
 	db := server.ConnectDB(config)
+	leaderboard := server.NewLeaderboard(db)
 	sessionHolder := server.NewSessionHolder(config)
-	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler)
+	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	initGames(gameHolder)
 
-	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline, db)
+	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline, db, leaderboard)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
