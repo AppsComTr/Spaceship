@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	"log"
 	"spaceship/model"
 	"strconv"
 	"time"
@@ -141,13 +142,14 @@ func (l Leaderboard) GetScores(typeName string, mode string, page int, itemCount
 	game := l.gameHolder.Get(mode)
 
 	var modeQ *string
-	if mode != "all" || game == nil {
+	if mode != "all" && game != nil {
 		modeQ = &mode
 	}
 
 	conn := l.db.Copy()
 	defer conn.Close()
 	db := conn.DB("spaceship")
+
 	err := db.C(model.LeaderboardModel{}.GetCollectionName()).Find(bson.M{
 		"type": typeName,
 		"mode": modeQ,
@@ -158,5 +160,89 @@ func (l Leaderboard) GetScores(typeName string, mode string, page int, itemCount
 	}
 
 	return scores, nil
+
+}
+
+func (l Leaderboard) GetUserRank(typeName string, mode string, userID string) int {
+
+	conn := l.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+
+	year, week := time.Now().ISOWeek()
+
+	dayID := time.Now().Format("02-01-2006")
+	weekID := strconv.Itoa(week) + "-" + strconv.Itoa(year)
+	monthID := time.Now().Format("01-2006")
+
+	if typeName != "day" && typeName != "week" && typeName != "month" && typeName != "overall" {
+		typeName = "overall"
+	}
+
+	var typeID *string
+
+	if typeName == "day" {
+		typeID = &dayID
+	}else if typeName == "week" {
+		typeID = &weekID
+	}else if typeName == "month" {
+		typeID = &monthID
+	}
+
+	game := l.gameHolder.Get(mode)
+
+	var modeQ *string
+	if mode != "all" && game != nil {
+		modeQ = &mode
+	}
+
+	//First get user score with given parameters
+	score := &model.LeaderboardModel{}
+	err := db.C(score.GetCollectionName()).Find(bson.M{
+		"type": typeName,
+		"mode": modeQ,
+		"typeID": typeID,
+		"userID": bson.ObjectIdHex(userID),
+	}).One(score)
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+
+	//Then find count of documents that has bigger score than user's
+	count, err := db.C(score.GetCollectionName()).Find(bson.M{
+		"type": typeName,
+		"mode": modeQ,
+		"typeID": typeID,
+		"score": bson.M{
+			"$gt": score.Score,
+		},
+	}).Sort("-score").Count()
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+
+	//Then we need to find all scores that has same score with users and find index of given user
+	scores := make([]model.LeaderboardModel, 0)
+	err = db.C(score.GetCollectionName()).Find(bson.M{
+		"type": typeName,
+		"mode": modeQ,
+		"typeID": typeID,
+		"score": score.Score,
+	}).Sort("-score").All(&scores)
+	if err != nil {
+		log.Println(err)
+		return 0
+	}
+
+	for _, iScore := range scores {
+		count++
+		if iScore.UserID.Hex() == userID {
+			break
+		}
+	}
+
+	return count
 
 }
