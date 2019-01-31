@@ -71,6 +71,15 @@ service SpaceShip {
         };
     }
 
+    rpc GetLeaderboard(LeaderboardRequest) returns (api.LeaderboardResponse) {
+        option (google.api.http) = {
+            get: "/v1/leaderboard/{type}/mode/{mode}"
+            additional_bindings {
+                get: "/v1/leaderboard/{type}/mode/{mode}/page/{page}"
+            }
+        };
+    }
+
     rpc TestEcho(google.protobuf.Empty) returns (api.Session) {
         option (google.api.http) = {
             get: "/v1/echo"

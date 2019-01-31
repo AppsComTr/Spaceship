@@ -125,7 +125,7 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 
 	}
 
-	isFinished := game.Loop(&rGameData, queuedDatas)
+	isFinished := game.Loop(&rGameData, queuedDatas, holder.leaderboard)
 
 	rGameData.UpdatedAt = time.Now().Unix()
 
@@ -330,7 +330,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 	}else{
 
-		isFinished, err := game.Update(gameData, session, updateData.Metadata)
+		isFinished, err := game.Update(gameData, session, updateData.Metadata, holder.leaderboard)
 		if err != nil {
 			return nil, err
 		}

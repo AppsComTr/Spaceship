@@ -3,6 +3,7 @@ package game
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"spaceship/server"
 	"spaceship/socketapi"
 )
@@ -98,7 +99,7 @@ func (tg *ExampleGame) Join(gameData *socketapi.GameData, session server.Session
 //}
 
 //Users should create their own metadata format. Ex: json string
-func (tg *ExampleGame) Update(gameData *socketapi.GameData, session server.Session, metadata string) (bool, error) {
+func (tg *ExampleGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard) (bool, error) {
 
 	var ptGameUpdateData EXGameUpdateData
 	err := json.Unmarshal([]byte(metadata), &ptGameUpdateData)
@@ -124,6 +125,35 @@ func (tg *ExampleGame) Update(gameData *socketapi.GameData, session server.Sessi
 			if ptGameData.AwayUser != nil && ptGameData.AwayUser.State == EX_GAME_USER_STATE_COMPLETED {
 				//Game is finished
 				isGameFinished = true
+
+				if ptGameData.HomeUser.FoundWordCount > ptGameData.AwayUser.FoundWordCount {
+					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 100)
+					if err != nil {
+						log.Println(err)
+					}
+					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 20)
+					if err != nil {
+						log.Println(err)
+					}
+				}else if ptGameData.HomeUser.FoundWordCount < ptGameData.AwayUser.FoundWordCount {
+					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 100)
+					if err != nil {
+						log.Println(err)
+					}
+					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 20)
+					if err != nil {
+						log.Println(err)
+					}
+				}else{
+					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 50)
+					if err != nil {
+						log.Println(err)
+					}
+					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 50)
+					if err != nil {
+						log.Println(err)
+					}
+				}
 			}
 		}else{
 			return false, errors.New("This user was already sent update data for this game")
@@ -138,6 +168,35 @@ func (tg *ExampleGame) Update(gameData *socketapi.GameData, session server.Sessi
 			if ptGameData.HomeUser != nil && ptGameData.HomeUser.State == EX_GAME_USER_STATE_COMPLETED {
 				//Game is finished
 				isGameFinished = true
+
+				if ptGameData.HomeUser.FoundWordCount > ptGameData.AwayUser.FoundWordCount {
+					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 100)
+					if err != nil {
+						log.Println(err)
+					}
+					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 20)
+					if err != nil {
+						log.Println(err)
+					}
+				}else if ptGameData.HomeUser.FoundWordCount < ptGameData.AwayUser.FoundWordCount {
+					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 100)
+					if err != nil {
+						log.Println(err)
+					}
+					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 20)
+					if err != nil {
+						log.Println(err)
+					}
+				}else{
+					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 50)
+					if err != nil {
+						log.Println(err)
+					}
+					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 50)
+					if err != nil {
+						log.Println(err)
+					}
+				}
 			}
 		}else{
 			return false, errors.New("This user was already sent update data for this game")
@@ -156,7 +215,7 @@ func (tg *ExampleGame) Update(gameData *socketapi.GameData, session server.Sessi
 	return isGameFinished, nil
 }
 
-func (tg *ExampleGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue) bool {
+func (tg *ExampleGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard) bool {
 
 	return true
 

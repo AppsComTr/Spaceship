@@ -60,11 +60,11 @@ func (tg *RTGame) Join(gameData *socketapi.GameData, session server.Session) err
 }
 
 //Users should create their own metadata format. Ex: json string
-func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string) (bool, error) {
+func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard) (bool, error) {
 	return false, nil
 }
 
-func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue) bool {
+func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard) bool {
 
 	var rtGameData RTGameData
 	err := json.Unmarshal([]byte(gameData.Metadata), &rtGameData)

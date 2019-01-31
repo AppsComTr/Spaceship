@@ -55,3 +55,21 @@ message Session {
 
     string token = 2;
 }
+
+message Leaderboard {
+    User user = 1;
+    int64 score = 2;
+}
+
+message LeaderboardRequest {
+    string type = 1;
+    string mode = 2;
+    string page = 3;
+}
+
+message LeaderboardResponse {
+    repeated Leaderboard items = 1;
+    int32 item_count = 2;
+    int32 page = 3;
+    bool has_next_page = 4;
+}
