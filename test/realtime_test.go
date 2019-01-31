@@ -35,12 +35,19 @@ func TestRTGame(t *testing.T) {
 
 			var message socketapi.Envelope
 
-			message = ReadMessage(failChan, onMessageChan)
+			var matchEntry *socketapi.MatchEntry
+			for {
+				message = ReadMessage(failChan, onMessageChan)
 
-			matchEntry := message.GetMatchEntry()
-			if matchEntry == nil {
-				failChan <- "Expected message match entry but unrecognized message was returned"
-				return
+				matchEntry = message.GetMatchEntry()
+				if matchEntry == nil {
+					failChan <- "Expected message match entry but unrecognized message was returned"
+					return
+				}
+
+				if matchEntry.State == int32(socketapi.MatchEntry_MATCH_AWAITING_PLAYERS) {
+					break
+				}
 			}
 
 			WriteMessage(failChan, conn, &socketapi.Envelope{Cid:"", Message: &socketapi.Envelope_MatchJoin{
@@ -50,6 +57,12 @@ func TestRTGame(t *testing.T) {
 			}})
 
 			message = ReadMessage(failChan, onMessageChan)
+			for {
+				if message.GetMatchStart() != nil {
+					break
+				}
+				message = ReadMessage(failChan, onMessageChan)
+			}
 			matchStart := message.GetMatchStart()
 			if matchStart == nil {
 				failChan <- "Expected message match start but unrecognized message was returned"
@@ -85,6 +98,13 @@ func TestRTGame(t *testing.T) {
 
 			for {
 				message = ReadMessage(failChan, onMessageChan)
+
+				for {
+					if message.GetMatchUpdateResp() != nil {
+						break
+					}
+					message = ReadMessage(failChan, onMessageChan)
+				}
 
 				matchUpdateResp := message.GetMatchUpdateResp()
 				if matchUpdateResp == nil {

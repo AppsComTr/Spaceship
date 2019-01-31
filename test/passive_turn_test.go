@@ -99,7 +99,14 @@ func TestPassiveGame(t *testing.T){
 				Metadata: string(matchUpdateRaw),
 			},
 		}})
+
 		message = ReadMessage(failChan, firstOnMessageChan)
+		for  {
+			if message.GetMatchUpdateResp() != nil {
+				break
+			}
+			message = ReadMessage(failChan, firstOnMessageChan)
+		}
 		matchUpdateResp := message.GetMatchUpdateResp()
 		if matchUpdateResp == nil {
 			failChan <- "Expected message match update resp but unrecognized message was returned"
@@ -121,6 +128,12 @@ func TestPassiveGame(t *testing.T){
 		}
 
 		message = ReadMessage(failChan, firstOnMessageChan)
+		for  {
+			if message.GetMatchUpdateResp() != nil {
+				break
+			}
+			message = ReadMessage(failChan, firstOnMessageChan)
+		}
 		matchUpdateResp = message.GetMatchUpdateResp()
 		if matchUpdateResp == nil {
 			failChan <- "Expected message match update resp but unrecognized message was returned"
@@ -195,6 +208,12 @@ func TestPassiveGame(t *testing.T){
 		}else{
 
 			message = ReadMessage(failChan, secondOnMessageChan)
+			for  {
+				if message.GetMatchUpdateResp() != nil {
+					break
+				}
+				message = ReadMessage(failChan, secondOnMessageChan)
+			}
 			matchUpdateResp := message.GetMatchUpdateResp()
 			if matchUpdateResp == nil {
 				failChan <- "Expected message match update resp but unrecognized message was returned"
@@ -237,6 +256,12 @@ func TestPassiveGame(t *testing.T){
 		}})
 
 		message = ReadMessage(failChan, secondOnMessageChan)
+		for  {
+			if message.GetMatchUpdateResp() != nil {
+				break
+			}
+			message = ReadMessage(failChan, secondOnMessageChan)
+		}
 		matchUpdateResp := message.GetMatchUpdateResp()
 		if matchUpdateResp == nil {
 			failChan <- "Expected message match update resp but unrecognized message was returned"

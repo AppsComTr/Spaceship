@@ -15,7 +15,7 @@ import (
 var (
 	jsonProtoMarshaler = &jsonpb.Marshaler{
 		EnumsAsInts: true,
-		EmitDefaults: false,
+		EmitDefaults: true,
 		Indent: "",
 		OrigName: true,
 	}

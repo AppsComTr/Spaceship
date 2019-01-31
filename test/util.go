@@ -44,7 +44,7 @@ func NewServer(t *testing.T) (*server.Server) {
 	leaderboard := server.NewLeaderboard(db)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonpbMarshaler, jsonpbUnmarshaler, leaderboard)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder)
 	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	gameHolder.Add(&PTGame{})

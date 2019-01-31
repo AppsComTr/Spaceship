@@ -329,13 +329,17 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
 			gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session)//TODO pipeline is anti-pattern argument here
-
 			if err != nil {
 				return nil, err
 			}
 
 			matchEntry.Game = gameData.Id
 			matchEntry.State = int32(socketapi.MatchEntry_GAME_CREATED)
+
+			gameData, err = JoinGame(matchEntry.Game, m.gameHolder, session)
+			if err != nil {
+				return nil, err
+			}
 
 			for _,user := range matchEntry.Users {
 				if user.UserId == session.UserID() {
