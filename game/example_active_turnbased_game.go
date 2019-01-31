@@ -1,33 +1,32 @@
-package test
+package game
 
 import (
 	"encoding/json"
-	"errors"
+	"github.com/pkg/errors"
 	"log"
 	"spaceship/server"
 	"spaceship/socketapi"
 )
 
-type PTGame struct {}
+type ExampleATGame struct {}
 
-var ptGameSpecs = server.GameSpecs{
+var exATGameSpecs = server.GameSpecs{
 	PlayerCount: 2,
-	Mode: server.GAME_TYPE_PASSIVE_TURN_BASED,
-	TickInterval: 0,
+	Mode: server.GAME_TYPE_ACTIVE_TURN_BASED,
 }
 
 const (
-	PT_GAME_USER_STATE_WAITING_FOR_PLAY = iota
-	PT_GAME_USER_STATE_COMPLETED
+	EX_AT_GAME_USER_STATE_WAITING_FOR_PLAY = iota
+	EX_AT_GAME_USER_STATE_COMPLETED
 )
 
-type PTGameUpdateData struct {
+type EXATGameUpdateData struct {
 	FoundWordCount int
 	FoundWordsLength int
 	TotalDuration int
 }
 
-type PTGameUserData struct {
+type EXATGameUserData struct {
 	UserID string
 	State int
 	FoundWordCount int
@@ -36,20 +35,20 @@ type PTGameUserData struct {
 }
 
 //Dummy struct for this example game
-type PTGameData struct {
+type EXATGameData struct {
 	Board string
-	HomeUser *PTGameUserData
-	AwayUser *PTGameUserData
+	HomeUser *EXATGameUserData
+	AwayUser *EXATGameUserData
 }
 
-func (tg *PTGame) GetName() string {
+func (tg *ExampleATGame) GetName() string {
 	//These value should be unique for each games
-	return "testGame"
+	return "exampleATGame"
 }
 
-func (tg *PTGame) Init(gameData *socketapi.GameData) error {
+func (tg *ExampleATGame) Init(gameData *socketapi.GameData) error {
 
-	ptGameData := PTGameData{
+	ptGameData := EXATGameData{
 		Board: "zzzxxxyyyaaabbbccc",
 	}
 
@@ -63,9 +62,9 @@ func (tg *PTGame) Init(gameData *socketapi.GameData) error {
 	return nil
 }
 
-func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session) error {
+func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Session) error {
 
-	var ptGameData PTGameData
+	var ptGameData EXATGameData
 
 	err := json.Unmarshal([]byte(gameData.Metadata), &ptGameData)
 	if err != nil {
@@ -73,14 +72,14 @@ func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session) err
 	}
 
 	if ptGameData.HomeUser == nil {
-		ptGameData.HomeUser = &PTGameUserData{
+		ptGameData.HomeUser = &EXATGameUserData{
 			UserID: session.UserID(),
-			State: PT_GAME_USER_STATE_WAITING_FOR_PLAY,
+			State: EX_AT_GAME_USER_STATE_WAITING_FOR_PLAY,
 		}
 	}else{
-		ptGameData.AwayUser = &PTGameUserData{
+		ptGameData.AwayUser = &EXATGameUserData{
 			UserID: session.UserID(),
-			State: PT_GAME_USER_STATE_WAITING_FOR_PLAY,
+			State: EX_AT_GAME_USER_STATE_WAITING_FOR_PLAY,
 		}
 	}
 
@@ -100,30 +99,30 @@ func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session) err
 //}
 
 //Users should create their own metadata format. Ex: json string
-func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard) (bool, error) {
+func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard) (bool, error) {
 
-	var ptGameUpdateData PTGameUpdateData
+	var ptGameUpdateData EXATGameUpdateData
 	err := json.Unmarshal([]byte(metadata), &ptGameUpdateData)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
-	var ptGameData PTGameData
+	var ptGameData EXATGameData
 	err = json.Unmarshal([]byte(gameData.Metadata), &ptGameData)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	isGameFinished := false
 
 	if ptGameData.HomeUser != nil && ptGameData.HomeUser.UserID == session.UserID() {
-		if ptGameData.HomeUser.State == PT_GAME_USER_STATE_WAITING_FOR_PLAY {
+		if ptGameData.HomeUser.State == EX_AT_GAME_USER_STATE_WAITING_FOR_PLAY {
 			ptGameData.HomeUser.FoundWordCount = ptGameUpdateData.FoundWordCount
 			ptGameData.HomeUser.FoundWordsLength = ptGameUpdateData.FoundWordsLength
 			ptGameData.HomeUser.TotalDuration = ptGameUpdateData.TotalDuration
-			ptGameData.HomeUser.State = PT_GAME_USER_STATE_COMPLETED
+			ptGameData.HomeUser.State = EX_AT_GAME_USER_STATE_COMPLETED
 
-			if ptGameData.AwayUser != nil && ptGameData.AwayUser.State == PT_GAME_USER_STATE_COMPLETED {
+			if ptGameData.AwayUser != nil && ptGameData.AwayUser.State == EX_AT_GAME_USER_STATE_COMPLETED {
 				//Game is finished
 				isGameFinished = true
 
@@ -160,13 +159,13 @@ func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, m
 			return false, errors.New("This user was already sent update data for this game")
 		}
 	}else if ptGameData.AwayUser != nil && ptGameData.AwayUser.UserID == session.UserID() {
-		if ptGameData.AwayUser.State == PT_GAME_USER_STATE_WAITING_FOR_PLAY {
+		if ptGameData.AwayUser.State == EX_AT_GAME_USER_STATE_WAITING_FOR_PLAY {
 			ptGameData.AwayUser.FoundWordCount = ptGameUpdateData.FoundWordCount
 			ptGameData.AwayUser.FoundWordsLength = ptGameUpdateData.FoundWordsLength
 			ptGameData.AwayUser.TotalDuration = ptGameUpdateData.TotalDuration
-			ptGameData.AwayUser.State = PT_GAME_USER_STATE_COMPLETED
+			ptGameData.AwayUser.State = EX_AT_GAME_USER_STATE_COMPLETED
 
-			if ptGameData.HomeUser != nil && ptGameData.HomeUser.State == PT_GAME_USER_STATE_COMPLETED {
+			if ptGameData.HomeUser != nil && ptGameData.HomeUser.State == EX_AT_GAME_USER_STATE_COMPLETED {
 				//Game is finished
 				isGameFinished = true
 
@@ -216,14 +215,15 @@ func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, m
 	return isGameFinished, nil
 }
 
-func (tg *PTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard) bool {
+func (tg *ExampleATGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard) bool {
 
 	return true
 
 }
 
-func (tg PTGame) GetGameSpecs() server.GameSpecs {
-	return ptGameSpecs
+func (tg ExampleATGame) GetGameSpecs() server.GameSpecs {
+	return exATGameSpecs
 }
+
 
 

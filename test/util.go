@@ -48,6 +48,7 @@ func NewServer(t *testing.T) (*server.Server) {
 	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis)
 
 	gameHolder.Add(&PTGame{})
+	gameHolder.Add(&ATGame{})
 	gameHolder.Add(&RTGame{})
 
 	return server.StartServer(sessionHolder, gameHolder, config, jsonpbMarshaler, jsonpbUnmarshaler, pipeline, db, leaderboard)

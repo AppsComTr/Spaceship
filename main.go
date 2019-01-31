@@ -65,6 +65,7 @@ func main() {
 
 func initGames(holder *server.GameHolder) {
 	holder.Add(&game.ExampleGame{})
+	holder.Add(&game.ExampleATGame{})
 	holder.Add(&game.RTGame{})
 }
 

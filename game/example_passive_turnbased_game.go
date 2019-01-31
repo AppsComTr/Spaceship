@@ -12,7 +12,7 @@ type ExampleGame struct {}
 
 var exGameSpecs = server.GameSpecs{
 	PlayerCount: 2,
-	Mode: server.GAME_TYPE_ACTIVE_TURN_BASED,
+	Mode: server.GAME_TYPE_PASSIVE_TURN_BASED,
 }
 
 const (
@@ -43,7 +43,7 @@ type EXGameData struct {
 
 func (tg *ExampleGame) GetName() string {
 	//These value should be unique for each games
-	return "exampleGame"
+	return "exampleATGame"
 }
 
 func (tg *ExampleGame) Init(gameData *socketapi.GameData) error {
