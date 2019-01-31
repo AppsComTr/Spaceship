@@ -24,7 +24,7 @@ func (l *Leaderboard) SetGameHolder(gameHolder *GameHolder) {
 	l.gameHolder = gameHolder
 }
 
-func (l *Leaderboard) Score(userID string, mode string, score int64) error {
+func (l *Leaderboard) Score(userID string, gameName string, score int64) error {
 
 	year, week := time.Now().ISOWeek()
 
@@ -36,19 +36,19 @@ func (l *Leaderboard) Score(userID string, mode string, score int64) error {
 	defer conn.Close()
 	db := conn.DB("spaceship")
 
-	err := l.scoreDetail(db, userID, &mode, "day", &dayID, score)
+	err := l.scoreDetail(db, userID, &gameName, "day", &dayID, score)
 	if err != nil {
 		return err
 	}
-	err = l.scoreDetail(db, userID, &mode, "week", &weekID, score)
+	err = l.scoreDetail(db, userID, &gameName, "week", &weekID, score)
 	if err != nil {
 		return err
 	}
-	err = l.scoreDetail(db, userID, &mode, "month", &monthID, score)
+	err = l.scoreDetail(db, userID, &gameName, "month", &monthID, score)
 	if err != nil {
 		return err
 	}
-	err = l.scoreDetail(db, userID, &mode, "overall", nil, score)
+	err = l.scoreDetail(db, userID, &gameName, "overall", nil, score)
 	if err != nil {
 		return err
 	}
@@ -74,14 +74,14 @@ func (l *Leaderboard) Score(userID string, mode string, score int64) error {
 
 }
 
-func (l Leaderboard) scoreDetail(db *mgo.Database, userID string, mode *string, typeName string, typeID *string, score int64) error {
+func (l Leaderboard) scoreDetail(db *mgo.Database, userID string, gameName *string, typeName string, typeID *string, score int64) error {
 
 	//For week with mode name
 	leaderboardM := &model.LeaderboardModel{}
 
 	err := db.C(leaderboardM.GetCollectionName()).Find(bson.M{
 		"userID": userID,
-		"mode": mode,
+		"gameName": gameName,
 		"type": typeName,
 		"typeID": typeID,
 	}).One(leaderboardM)
@@ -89,7 +89,7 @@ func (l Leaderboard) scoreDetail(db *mgo.Database, userID string, mode *string, 
 	if err != nil {
 		if err == mgo.ErrNotFound {
 			leaderboardM.Score = score
-			leaderboardM.Mode = mode
+			leaderboardM.GameName = gameName
 			leaderboardM.Type = typeName
 			leaderboardM.TypeID = typeID
 			leaderboardM.UserID = bson.ObjectIdHex(userID)
@@ -115,7 +115,7 @@ func (l Leaderboard) scoreDetail(db *mgo.Database, userID string, mode *string, 
 
 }
 
-func (l Leaderboard) GetScores(typeName string, mode string, page int, itemCount int) ([]model.LeaderboardModel, error) {
+func (l Leaderboard) GetScores(typeName string, gameName string, page int, itemCount int) ([]model.LeaderboardModel, error) {
 
 	year, week := time.Now().ISOWeek()
 
@@ -139,11 +139,11 @@ func (l Leaderboard) GetScores(typeName string, mode string, page int, itemCount
 
 	scores := make([]model.LeaderboardModel, 0)
 
-	game := l.gameHolder.Get(mode)
+	game := l.gameHolder.Get(gameName)
 
-	var modeQ *string
-	if mode != "all" && game != nil {
-		modeQ = &mode
+	var gameNameQ *string
+	if gameName != "all" && game != nil {
+		gameNameQ = &gameName
 	}
 
 	conn := l.db.Copy()
@@ -152,7 +152,7 @@ func (l Leaderboard) GetScores(typeName string, mode string, page int, itemCount
 
 	err := db.C(model.LeaderboardModel{}.GetCollectionName()).Find(bson.M{
 		"type": typeName,
-		"mode": modeQ,
+		"gameName": gameNameQ,
 		"typeID": typeID,
 	}).Sort("-score").Skip(page*itemCount).Limit(itemCount).All(&scores)
 	if err != nil {
@@ -163,7 +163,7 @@ func (l Leaderboard) GetScores(typeName string, mode string, page int, itemCount
 
 }
 
-func (l Leaderboard) GetUserRank(typeName string, mode string, userID string) int {
+func (l Leaderboard) GetUserRank(typeName string, gameName string, userID string) int {
 
 	conn := l.db.Copy()
 	defer conn.Close()
@@ -189,18 +189,18 @@ func (l Leaderboard) GetUserRank(typeName string, mode string, userID string) in
 		typeID = &monthID
 	}
 
-	game := l.gameHolder.Get(mode)
+	game := l.gameHolder.Get(gameName)
 
-	var modeQ *string
-	if mode != "all" && game != nil {
-		modeQ = &mode
+	var gameNameQ *string
+	if gameName != "all" && game != nil {
+		gameNameQ = &gameName
 	}
 
 	//First get user score with given parameters
 	score := &model.LeaderboardModel{}
 	err := db.C(score.GetCollectionName()).Find(bson.M{
 		"type": typeName,
-		"mode": modeQ,
+		"gameName": gameNameQ,
 		"typeID": typeID,
 		"userID": bson.ObjectIdHex(userID),
 	}).One(score)
@@ -212,7 +212,7 @@ func (l Leaderboard) GetUserRank(typeName string, mode string, userID string) in
 	//Then find count of documents that has bigger score than user's
 	count, err := db.C(score.GetCollectionName()).Find(bson.M{
 		"type": typeName,
-		"mode": modeQ,
+		"gameName": gameNameQ,
 		"typeID": typeID,
 		"score": bson.M{
 			"$gt": score.Score,
@@ -227,7 +227,7 @@ func (l Leaderboard) GetUserRank(typeName string, mode string, userID string) in
 	scores := make([]model.LeaderboardModel, 0)
 	err = db.C(score.GetCollectionName()).Find(bson.M{
 		"type": typeName,
-		"mode": modeQ,
+		"gameName": gameNameQ,
 		"typeID": typeID,
 		"score": score.Score,
 	}).Sort("-score").All(&scores)

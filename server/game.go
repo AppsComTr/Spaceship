@@ -35,7 +35,7 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 	game := holder.Get(modeName)
 
 	if game == nil {
-		return nil, errors.New("Game couldn't found with given mode name")
+		return nil, errors.New("Game couldn't found with given game name")
 	}
 
 	gameData.ModeName = game.GetName()
@@ -191,7 +191,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 
 	game := holder.Get(gameData.ModeName)
 	if game == nil {
-		return nil, errors.New("Game couldn't found with given mode name")
+		return nil, errors.New("Game couldn't found with given game name")
 	}
 
 	//Check if user is already joined to this game
@@ -247,7 +247,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 //
 //	game := holder.Get(gameData.ModeName)
 //	if game == nil {
-//		return nil, errors.New("Game couldn't found with given mode name")
+//		return nil, errors.New("Game couldn't found with given game name")
 //	}
 //
 //	userIndex := -1
@@ -304,7 +304,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 	game := holder.Get(gameData.ModeName)
 	if game == nil {
-		return nil, errors.New("Game couldn't found with given mode name")
+		return nil, errors.New("Game couldn't found with given game name")
 	}
 
 	//TODO: we need to check if game exists with given game id

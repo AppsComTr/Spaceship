@@ -21,7 +21,7 @@ message Envelope {
     oneof message {
         Error error = 2;
         MatchError match_error = 3;
-        MatchStart match_start = 4;
+        MatchJoinResp match_start = 4;
         MatchUpdate match_update = 5;
         MatchFind match_find = 6;
         MatchJoin match_join = 7;
@@ -79,7 +79,7 @@ message Error {
     map<string, string> context = 3;
 }
 
-message MatchStart {
+message MatchJoinResp {
     GameData game_data = 1;
 }
 

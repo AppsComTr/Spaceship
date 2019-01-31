@@ -33,7 +33,7 @@ func (p *Pipeline) matchmakerJoin(session Session, envelope *socketapi.Envelope)
 		}}})
 	}
 
-	ms := socketapi.MatchStart{GameData: game}
+	ms := socketapi.MatchJoinResp{GameData: game}
 	session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_MatchStart{MatchStart:&ms}})
 }
 
