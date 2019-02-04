@@ -303,7 +303,9 @@ func (s *session) Close() {
 	s.closed = true
 	s.Unlock()
 
+	s.sessionHolder.leave(s.id)
 	s.sessionHolder.remove(s.id)
+
 	s.pingTimer.Stop()
 	close(s.outgoingCh)
 

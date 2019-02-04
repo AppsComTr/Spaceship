@@ -13,7 +13,7 @@ func (p *Pipeline) matchmakerFind(session Session, envelope *socketapi.Envelope)
 		log.Println(err)
 		session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 			Code:    int32(socketapi.Error_MATCH_JOIN_REJECTED),
-			Message: "Could not join match.",
+			Message: "Could not find match.",
 		}}})
 	}
 
