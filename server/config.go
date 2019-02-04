@@ -21,4 +21,8 @@ type Config struct {
 	}
 	Port int `default:"7350"`
 	ApiURL string `default:"http://localhost"`
+	NotificationConfig struct{
+		AppKey string
+		AppID string
+	}
 }

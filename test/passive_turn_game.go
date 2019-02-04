@@ -63,7 +63,7 @@ func (tg *PTGame) Init(gameData *socketapi.GameData) error {
 	return nil
 }
 
-func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session) error {
+func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session, notification *server.Notification) error {
 
 	var ptGameData PTGameData
 
@@ -100,7 +100,7 @@ func (tg *PTGame) Join(gameData *socketapi.GameData, session server.Session) err
 //}
 
 //Users should create their own metadata format. Ex: json string
-func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard) (bool, error) {
+func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification) (bool, error) {
 
 	var ptGameUpdateData PTGameUpdateData
 	err := json.Unmarshal([]byte(metadata), &ptGameUpdateData)
@@ -155,6 +155,8 @@ func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, m
 						log.Println(err)
 					}
 				}
+
+				notification.SendNotificationWithUserIDs(map[string]string{"en": "Hey!"}, map[string]string{"en": "Match was completed"}, ptGameData.HomeUser.UserID, ptGameData.AwayUser.UserID)
 			}
 		}else{
 			return false, errors.New("This user was already sent update data for this game")
@@ -198,6 +200,8 @@ func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, m
 						log.Println(err)
 					}
 				}
+
+				notification.SendNotificationWithUserIDs(map[string]string{"en": "Hey!"}, map[string]string{"en": "Match was completed"}, ptGameData.HomeUser.UserID, ptGameData.AwayUser.UserID)
 			}
 		}else{
 			return false, errors.New("This user was already sent update data for this game")
@@ -216,7 +220,7 @@ func (tg *PTGame) Update(gameData *socketapi.GameData, session server.Session, m
 	return isGameFinished, nil
 }
 
-func (tg *PTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard) bool {
+func (tg *PTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification) bool {
 
 	return true
 

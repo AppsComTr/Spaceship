@@ -137,6 +137,112 @@ func (as *Server) UpdateUser(context context.Context, request *api.UserUpdate) (
 
 }
 
+func (as *Server) AddNotificationToken(context context.Context, request *api.NotificationTokenUpdate) (*empty.Empty, error) {
+
+	emptyS := &empty.Empty{}
+	userID := context.Value(ctxUserIDKey{}).(string)
+	token := strings.TrimSpace(request.Token)
+
+	if token == "" {
+		return nil, status.Error(400, "Token couldn't be empty")
+	}
+
+	modelS := model.NotificationToken{
+		UserID: bson.ObjectIdHex(userID),
+		Token: token,
+	}
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+
+	count, err := db.C(modelS.GetCollectionName()).Find(bson.M{
+		"userID": bson.ObjectIdHex(userID),
+		"token": token,
+	}).Count()
+	if err != nil {
+		return nil, status.Error(500, "DB error: " + err.Error())
+	}
+	//This entry already exists in db so we don't need to create it again
+	if count > 0 {
+		return emptyS, nil
+	}
+
+	err = db.C(modelS.GetCollectionName()).Insert(modelS)
+	if err != nil {
+		return nil, status.Error(500, "DB error: " + err.Error())
+	}
+
+	return emptyS, nil
+}
+
+func (as *Server) UpdateNotificationToken(context context.Context, request *api.NotificationTokenUpdate) (*empty.Empty, error) {
+
+	emptyS := &empty.Empty{}
+	userID := context.Value(ctxUserIDKey{}).(string)
+	token := strings.TrimSpace(request.Token)
+	oldToken := strings.TrimSpace(request.OldToken)
+
+	if token == "" || oldToken == "" {
+		return nil, status.Error(400, "token or old_token couldn't be empty")
+	}
+
+	modelS := model.NotificationToken{}
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+
+	err := db.C(modelS.GetCollectionName()).Find(bson.M{
+		"userID": bson.ObjectIdHex(userID),
+		"token": oldToken,
+	}).One(&modelS)
+	if err != nil {
+		if err == mgo.ErrNotFound{
+			return nil, status.Error(400, "Cannot find token with given values")
+		}else{
+			log.Println(err)
+			return nil, status.Error(500, "DB error: " + err.Error())
+		}
+	}
+
+	modelS.Token = token
+
+	err = db.C(modelS.GetCollectionName()).Update(bson.M{
+		"_id": modelS.Id,
+	}, modelS)
+	if err != nil {
+		return nil, status.Error(500, "DB error: " + err.Error())
+	}
+
+	return emptyS, nil
+}
+
+func (as *Server) DeleteNotificationToken(context context.Context, request *api.NotificationTokenUpdate) (*empty.Empty, error) {
+
+	emptyS := &empty.Empty{}
+	userID := context.Value(ctxUserIDKey{}).(string)
+	token := strings.TrimSpace(request.Token)
+
+	if token == "" {
+		return nil, status.Error(400, "Token couldn't be empty")
+	}
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+
+	err := db.C(model.NotificationToken{}.GetCollectionName()).Remove(bson.M{
+		"userID": bson.ObjectIdHex(userID),
+		"token": token,
+	})
+	if err != nil {
+		return nil, status.Error(500, "DB error: " + err.Error())
+	}
+
+	return emptyS, nil
+}
+
 func (as *Server) TestEcho(context context.Context, empty *empty.Empty) (*api.Session, error){
 	return &api.Session{
 		Token: "at",

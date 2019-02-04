@@ -125,7 +125,7 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 
 	}
 
-	isFinished := game.Loop(&rGameData, queuedDatas, holder.leaderboard)
+	isFinished := game.Loop(&rGameData, queuedDatas, holder.leaderboard, holder.notification)
 
 	rGameData.UpdatedAt = time.Now().Unix()
 
@@ -208,7 +208,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 
 	gameData.UserIDs = append(gameData.UserIDs, session.UserID())
 
-	err = game.Join(gameData, session)
+	err = game.Join(gameData, session, holder.notification)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +330,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 	}else{
 
-		isFinished, err := game.Update(gameData, session, updateData.Metadata, holder.leaderboard)
+		isFinished, err := game.Update(gameData, session, updateData.Metadata, holder.leaderboard, holder.notification)
 		if err != nil {
 			return nil, err
 		}

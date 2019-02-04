@@ -50,6 +50,11 @@ message User {
     google.protobuf.Timestamp update_time = 10;
 }
 
+message NotificationTokenUpdate {
+    string old_token = 1;
+    string token = 2;
+}
+
 message UserUpdate {
     string display_name = 1;
     string avatar = 2;

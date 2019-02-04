@@ -36,12 +36,13 @@ func main() {
 	redis := redisConnect(config)
 
 	db := server.ConnectDB(config)
+	notification := server.NewNotificationService(db, config)
 	leaderboard := server.NewLeaderboard(db)
 	sessionHolder := server.NewSessionHolder(config)
-	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard)
+	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard, notification)
 	leaderboard.SetGameHolder(gameHolder)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder)
-	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification)
+	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis, notification)
 
 	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
 

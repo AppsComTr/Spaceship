@@ -62,7 +62,7 @@ func (tg *ExampleATGame) Init(gameData *socketapi.GameData) error {
 	return nil
 }
 
-func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Session) error {
+func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Session, notification *server.Notification) error {
 
 	var ptGameData EXATGameData
 
@@ -99,7 +99,7 @@ func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Sessi
 //}
 
 //Users should create their own metadata format. Ex: json string
-func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard) (bool, error) {
+func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification) (bool, error) {
 
 	var ptGameUpdateData EXATGameUpdateData
 	err := json.Unmarshal([]byte(metadata), &ptGameUpdateData)
@@ -215,7 +215,7 @@ func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Ses
 	return isGameFinished, nil
 }
 
-func (tg *ExampleATGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard) bool {
+func (tg *ExampleATGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification) bool {
 
 	return true
 

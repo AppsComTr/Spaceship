@@ -78,6 +78,26 @@ service SpaceShip {
         };
     }
 
+    rpc AddNotificationToken(api.NotificationTokenUpdate) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/account/notification",
+            body: "*"
+        };
+    }
+
+    rpc UpdateNotificationToken(api.NotificationTokenUpdate) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/account/notification",
+            body: "*"
+        };
+    }
+
+    rpc DeleteNotificationToken(api.NotificationTokenUpdate) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/account/notification/{token}"
+        };
+    }
+
     rpc GetLeaderboard(LeaderboardRequest) returns (api.LeaderboardResponse) {
         option (google.api.http) = {
             get: "/v1/leaderboard/{type}/mode/{mode}"

@@ -10,12 +10,12 @@ import (
 type GameController interface {
 	GetName() string
 	Init(gameData *socketapi.GameData) error
-	Join(gameData *socketapi.GameData, session Session) error
+	Join(gameData *socketapi.GameData, session Session, notification *Notification) error
 	//Leave(gameData *socketapi.GameData, session Session) error
 	//Should return true if game is finished, so framework can remove gamedata from redis and store it in db
-	Update(gameData *socketapi.GameData, session Session, metadata string, leaderboard *Leaderboard) (bool, error)
+	Update(gameData *socketapi.GameData, session Session, metadata string, leaderboard *Leaderboard, notification *Notification) (bool, error)
 	//This will be called instead of update if game is realtime game with tick rate
-	Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *Leaderboard) bool
+	Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *Leaderboard, notification *Notification) bool
 	GetGameSpecs() GameSpecs
 }
 
@@ -26,15 +26,17 @@ type GameHolder struct {
 	jsonProtoMarshler *jsonpb.Marshaler
 	jsonProtoUnmarshler *jsonpb.Unmarshaler
 	leaderboard *Leaderboard
+	notification *Notification
 }
 
-func NewGameHolder(redis radix.Client, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, leaderboard *Leaderboard) *GameHolder {
+func NewGameHolder(redis radix.Client, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, leaderboard *Leaderboard, notification *Notification) *GameHolder {
 	return &GameHolder{
 		games: make(map[string]GameController),
 		redis: redis,
 		jsonProtoMarshler: jsonpbMarshler,
 		jsonProtoUnmarshler: jsonpbUnmarshaler,
 		leaderboard: leaderboard,
+		notification: notification,
 	}
 }
 

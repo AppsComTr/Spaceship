@@ -27,16 +27,18 @@ type LocalMatchmaker struct {
 	redis radix.Client
 	gameHolder *GameHolder
 	sessionHolder *SessionHolder
+	notification *Notification
 
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder, notification *Notification) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
 		entries: make(map[string]*socketapi.MatchEntry),
 		sessionHolder: sessionHolder,
+		notification: notification,
 	}
 }
 

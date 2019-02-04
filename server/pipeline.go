@@ -18,9 +18,10 @@ type Pipeline struct {
 	jsonProtoUnmarshler *jsonpb.Unmarshaler
 	db *mgo.Session
 	redis radix.Client
+	notification *Notification
 }
 
-func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session, redis radix.Client) *Pipeline {
+func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session, redis radix.Client, notification *Notification) *Pipeline {
 	return &Pipeline{
 		config: config,
 		gameHolder: gameHolder,
@@ -30,6 +31,7 @@ func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoU
 		jsonProtoUnmarshler: jsonProtoUnmarshler,
 		db: db,
 		redis: redis,
+		notification: notification,
 	}
 }
 
