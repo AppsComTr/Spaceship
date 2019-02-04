@@ -78,7 +78,9 @@ func (r *SessionHolder) remove(sessionID uuid.UUID) {
 
 func (r *SessionHolder) leave(sessionID uuid.UUID) {
 	r.Lock()
-	r.leaveListener(sessionID)
+	if r.leaveListener != nil {
+		r.leaveListener(sessionID)
+	}
 	r.Unlock()
 }
 

@@ -52,6 +52,8 @@ func NewServer(t *testing.T) (*server.Server) {
 	gameHolder.Add(&ATGame{})
 	gameHolder.Add(&RTGame{})
 
+	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
+
 	return server.StartServer(sessionHolder, gameHolder, config, jsonpbMarshaler, jsonpbUnmarshaler, pipeline, db, leaderboard)
 
 }
