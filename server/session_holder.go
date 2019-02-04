@@ -31,6 +31,8 @@ type SessionHolder struct {
 	sessions map[uuid.UUID]Session
 	sessionsPerUserID map[string]Session
 	config *Config
+
+	leaveListener func(sessionID uuid.UUID) error
 }
 
 func NewSessionHolder(config *Config) *SessionHolder {
@@ -73,3 +75,16 @@ func (r *SessionHolder) remove(sessionID uuid.UUID) {
 	delete(r.sessions, sessionID)
 	r.Unlock()
 }
+
+func (r *SessionHolder) leave(sessionID uuid.UUID) {
+	r.Lock()
+	r.leaveListener(sessionID)
+	r.Unlock()
+}
+
+func (r *SessionHolder) SetLeaveListener(fn func(sessionID uuid.UUID) error) {
+	r.Lock()
+	r.leaveListener = fn
+	r.Unlock()
+}
+
