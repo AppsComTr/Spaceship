@@ -51,7 +51,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-			nCtx, err := securityInterceptorFunc(ctx, req, info)
+			nCtx, err := securityInterceptorFunc(ctx, req, info, config)
 			if err != nil {
 				return nil, err
 			}
@@ -115,7 +115,8 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 	// Special case routes. Do NOT enable compression on WebSocket route, it results in "http: response.Write on hijacked connection" errors.
 	grpcGatewayRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }).Methods("GET")
 	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, pipeline)).Methods("GET")
-
+	fs := http.FileServer(http.Dir("/var/spaceshipassets/"))
+	grpcGatewayRouter.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
 
 	grpcGatewayRouter.NewRoute().HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Do not allow clients to set certain headers.
@@ -154,7 +155,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 
 }
 
-func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo) (context.Context, error) {
+func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, config *Config) (context.Context, error) {
 	switch info.FullMethod {
 	case "/spaceship.api.SpaceShip/AuthenticateFacebook":
 		fallthrough
@@ -180,7 +181,7 @@ func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.Un
 			// Value of "authorization" or "grpc-authorization" was empty or repeated.
 			return nil, status.Error(codes.Unauthenticated, "Auth token invalid")
 		}
-		userID, username, exp, ok := parseBearerAuth([]byte("asdasdqweqasdqwwe"), auth[0])
+		userID, username, exp, ok := parseBearerAuth([]byte(config.AuthConfig.JWTSecret), auth[0])
 		if !ok {
 			// Value of "authorization" or "grpc-authorization" was malformed or expired.
 			return nil, status.Error(codes.Unauthenticated, "Auth token invalid")

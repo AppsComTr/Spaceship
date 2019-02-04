@@ -20,4 +20,5 @@ type Config struct {
 		TokenExpireTime int `default:"86400"`
 	}
 	Port int `default:"7350"`
+	ApiURL string `default:"http://localhost"`
 }

@@ -71,6 +71,13 @@ service SpaceShip {
         };
     }
 
+    rpc UpdateUser(api.UserUpdate) returns (api.User) {
+        option (google.api.http) = {
+            put: "/v1/account/update",
+            body: "*"
+        };
+    }
+
     rpc GetLeaderboard(LeaderboardRequest) returns (api.LeaderboardResponse) {
         option (google.api.http) = {
             get: "/v1/leaderboard/{type}/mode/{mode}"

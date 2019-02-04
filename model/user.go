@@ -3,6 +3,7 @@ package model
 import (
 	"github.com/globalsign/mgo/bson"
 	"spaceship/api"
+	"strings"
 )
 
 type User struct {
@@ -38,6 +39,13 @@ func (u *User) MapFromPB(pbUser api.User) {
 	u.Metadata = pbUser.Metadata
 	u.FacebookId = pbUser.FacebookId
 	u.Online = pbUser.Online
+}
+
+func (u *User) Update(updateData *api.UserUpdate) {
+	updateData.DisplayName = strings.TrimSpace(updateData.DisplayName)
+	if updateData.DisplayName != "" {
+		u.DisplayName = updateData.DisplayName
+	}
 }
 
 func (u User) GetCollectionName() string {

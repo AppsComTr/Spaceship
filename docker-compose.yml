@@ -12,6 +12,8 @@ services:
     depends_on:
       - mongo
       - redis
+    volumes:
+      - ./assets:/var/spaceshipassets
   mongo:
     container_name: mongo
     image: mongo

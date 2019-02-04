@@ -93,13 +93,13 @@ func AuthenticateFacebook(fingerprint string, fbToken string, conn *mgo.Session)
 	}).One(user)
 
 	if err != nil {
-		if err.Error() == mgo.ErrNotFound.Error() {
+		if err == mgo.ErrNotFound {
 
 			err = db.C(user.GetCollectionName()).Find(bson.M{
 				"fingerprint": fingerprint,
 			}).One(user)
 			if err != nil{
-				if err.Error() == mgo.ErrNotFound.Error() {
+				if err == mgo.ErrNotFound {
 
 					username := goherokuname.HaikunateCustom("-", 4, "DfWx9873214560jzrl")
 

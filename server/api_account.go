@@ -1,11 +1,24 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/globalsign/mgo"
+	"github.com/globalsign/mgo/bson"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/satori/go.uuid"
 	"google.golang.org/grpc/status"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
+	"io/ioutil"
+	"log"
+	"os"
 	"spaceship/api"
+	"spaceship/model"
+	"strings"
 	"time"
 )
 
@@ -44,6 +57,83 @@ func (as *Server) AuthenticateFacebook(context context.Context, request *api.Aut
 	}
 
 	return &session, nil
+
+}
+
+func (as *Server) UpdateUser(context context.Context, request *api.UserUpdate) (*api.User, error) {
+
+	userID := context.Value(ctxUserIDKey{}).(string)
+
+	user := &model.User{}
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+	err := db.C(user.GetCollectionName()).Find(bson.M{
+		"_id": bson.ObjectIdHex(userID),
+	}).One(user)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, status.Error(404, "User couldn't found")
+		}else{
+			log.Println(err)
+			return nil, status.Error(500, "Internal server error")
+		}
+	}
+
+	user.Update(request)
+
+	if request.Avatar != "" {
+		reader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(request.Avatar))
+
+		buff := bytes.Buffer{}
+		_, err = buff.ReadFrom(reader)
+		if err != nil {
+			log.Println(err)
+			return nil, status.Error(500, "Internal server error")
+		}
+
+		_, format, err := image.Decode(bytes.NewReader(buff.Bytes()))
+		if err != nil {
+			return nil, status.Error(400, err.Error())
+		}
+		log.Println(format)
+
+		if _, err := os.Stat("/var/spaceshipassets"); os.IsNotExist(err) {
+			err = os.Mkdir("/var/spaceshipassets", os.ModePerm)
+			if err != nil {
+				log.Println(err)
+				return nil, status.Error(500, "Internal server error")
+			}
+		}
+
+		fileName := strings.Replace(uuid.NewV4().String(), "-", "", -1) + ".jpg"
+
+		for {
+			if _, err := os.Stat("/var/spaceshipassets/"+fileName); os.IsNotExist(err) {
+				break
+			}
+			fileName = strings.Replace(uuid.NewV4().String(), "-", "", -1) + ".jpg"
+		}
+
+		err = ioutil.WriteFile("/var/spaceshipassets/"+fileName, buff.Bytes(), 0644)
+		if err != nil {
+			log.Println(err)
+			return nil, status.Error(500, "Internal server error")
+		}
+		user.AvatarUrl = as.config.ApiURL + "/assets/" + fileName
+
+	}
+
+	err = db.C(user.GetCollectionName()).Update(bson.M{
+		"_id": bson.ObjectIdHex(userID),
+	}, user)
+	if err != nil {
+		log.Println(err)
+		return nil, status.Error(500, "Internal server error")
+	}
+
+	return user.MapToPB(), nil
 
 }
 
