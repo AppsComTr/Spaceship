@@ -43,6 +43,7 @@ func NewServer(t *testing.T) (*server.Server) {
 	db := server.ConnectDB(config)
 	notification := server.NewNotificationService(db, config)
 	leaderboard := server.NewLeaderboard(db)
+	stats := server.NewStatsHolder()
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonpbMarshaler, jsonpbUnmarshaler, leaderboard, notification)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification)
@@ -54,7 +55,7 @@ func NewServer(t *testing.T) (*server.Server) {
 
 	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
 
-	return server.StartServer(sessionHolder, gameHolder, config, jsonpbMarshaler, jsonpbUnmarshaler, pipeline, db, leaderboard)
+	return server.StartServer(sessionHolder, gameHolder, config, jsonpbMarshaler, jsonpbUnmarshaler, pipeline, db, leaderboard, stats)
 
 }
 

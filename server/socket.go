@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline) func(http.ResponseWriter, *http.Request) {
+func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, stats *Stats) func(http.ResponseWriter, *http.Request) {
 	upgrader := &websocket.Upgrader{
 		ReadBufferSize: 4096,
 		WriteBufferSize: 4096,
@@ -58,7 +58,7 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder 
 			return
 		}
 
-		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, sessionHolder, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler)
+		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, sessionHolder, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, stats)
 
 		log.Println("New socket connection was established id: " + s.ID().String())
 

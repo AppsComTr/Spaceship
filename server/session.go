@@ -29,6 +29,7 @@ type session struct {
 
 	sessionHolder *SessionHolder
 	config *Config
+	stats *Stats
 	conn *websocket.Conn
 
 	jsonProtoMarshler *jsonpb.Marshaler
@@ -44,9 +45,11 @@ type session struct {
 	closed bool
 }
 
-func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config, sessionHolder *SessionHolder, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler) Session {
+func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config, sessionHolder *SessionHolder, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, stats *Stats) Session {
 
 	sessionID := uuid.Must(uuid.NewV4(), nil)
+
+	stats.IncrSocketConnection()
 
 	return &session{
 		id: sessionID,
@@ -63,6 +66,7 @@ func NewSession(userID string, username string, expiry int64, clientIP string, c
 		config: config,
 		conn: conn,
 		sessionHolder: sessionHolder,
+		stats: stats,
 
 		jsonProtoMarshler: jsonProtoMarshler,
 		jsonProtoUnmarshler: jsonProtoUnmarshler,
@@ -125,6 +129,7 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 
 	for {
 		_, data, err := s.conn.ReadMessage()
+		s.stats.IncrSocketRequest()
 
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived) {
@@ -302,6 +307,8 @@ func (s *session) Close() {
 	}
 	s.closed = true
 	s.Unlock()
+
+	s.stats.DecrSocketConnection()
 
 	s.sessionHolder.leave(s.id)
 	s.sessionHolder.remove(s.id)

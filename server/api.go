@@ -36,6 +36,7 @@ type Server struct {
 	config *Config
 	gameHolder *GameHolder
 	leaderboard *Leaderboard
+	stats *Stats
 }
 
 func (s *Server) Stop() {
@@ -46,12 +47,13 @@ func (s *Server) Stop() {
 	s.grpcServer.GracefulStop()
 }
 
-func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, db *mgo.Session, leaderboard *Leaderboard) *Server {
+func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, db *mgo.Session, leaderboard *Leaderboard, stats *Stats) *Server {
 
 	port := config.Port
 
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+			stats.IncrRequest()
 			nCtx, err := securityInterceptorFunc(ctx, req, info, config)
 			if err != nil {
 				return nil, err
@@ -69,6 +71,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		gameHolder: gameHolder,
 		db: db,
 		leaderboard: leaderboard,
+		stats: stats,
 	}
 
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)
@@ -115,7 +118,8 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 	grpcGatewayRouter := mux.NewRouter()
 	// Special case routes. Do NOT enable compression on WebSocket route, it results in "http: response.Write on hijacked connection" errors.
 	grpcGatewayRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }).Methods("GET")
-	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, pipeline)).Methods("GET")
+	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, pipeline, stats)).Methods("GET")
+	grpcGatewayRouter.Handle("/metrics", stats.prometheusExporter)
 	fs := http.FileServer(http.Dir("/var/spaceshipassets/"))
 	grpcGatewayRouter.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
 

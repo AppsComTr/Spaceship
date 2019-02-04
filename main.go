@@ -38,6 +38,7 @@ func main() {
 	db := server.ConnectDB(config)
 	notification := server.NewNotificationService(db, config)
 	leaderboard := server.NewLeaderboard(db)
+	stats := server.NewStatsHolder()
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard, notification)
 	leaderboard.SetGameHolder(gameHolder)
@@ -48,7 +49,7 @@ func main() {
 
 	initGames(gameHolder)
 
-	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline, db, leaderboard)
+	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline, db, leaderboard, stats)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
