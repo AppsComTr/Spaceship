@@ -63,6 +63,7 @@ func TestRTGame(t *testing.T) {
 				}
 				message = ReadMessage(failChan, onMessageChan)
 			}
+
 			matchStart := message.GetMatchStart()
 			if matchStart == nil {
 				failChan <- "Expected message match start but unrecognized message was returned"
@@ -73,7 +74,7 @@ func TestRTGame(t *testing.T) {
 
 			go func(){
 
-				for i := 0; i < 10; i++ {
+				for i := 0; i < 20; i++ {
 
 					rand.Seed(time.Now().Unix())
 					//Send match update data

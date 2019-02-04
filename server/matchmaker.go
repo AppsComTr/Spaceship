@@ -153,7 +153,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 
 			return matchEntry, nil
 		}
-	}else if game.GetGameSpecs().Mode == GAME_TYPE_ACTIVE_TURN_BASED {
+	}else if game.GetGameSpecs().Mode == GAME_TYPE_ACTIVE_TURN_BASED || game.GetGameSpecs().Mode == GAME_TYPE_REAL_TIME {
 		var matchID string
 		err := m.redis.Do(radix.Cmd(&matchID, "LINDEX", queueKey, "0"))
 		if err != nil {
@@ -383,7 +383,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 		}
 
 		return gameData,nil
-	}else if game.GetGameSpecs().Mode == GAME_TYPE_ACTIVE_TURN_BASED {
+	}else if game.GetGameSpecs().Mode == GAME_TYPE_ACTIVE_TURN_BASED || game.GetGameSpecs().Mode == GAME_TYPE_REAL_TIME {
 		if matchEntry.State == int32(socketapi.MatchEntry_MATCH_AWAITING_PLAYERS) {
 			for _,user := range matchEntry.Users {
 				if user.UserId == session.UserID() && user.State == int32(socketapi.MatchEntry_MatchUser_NOT_READY) {
