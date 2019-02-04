@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"spaceship/apigrpc"
 	"strings"
+	"time"
 )
 
 type ctxUserIDKey struct{}
@@ -224,7 +225,7 @@ func parseToken(hmacSecretByte []byte, tokenString string) (userID string, usern
 
 func ConnectDB(config *Config) *mgo.Session {
 
-	conn, err := mgo.Dial(config.DBConfig.ConnString)
+	conn, err := mgo.DialWithTimeout(config.DBConfig.ConnString, time.Duration(30 * time.Second))
 	if err != nil {
 		log.Fatal("Cannot dial mongo", err)
 	}

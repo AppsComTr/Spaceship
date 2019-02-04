@@ -43,6 +43,7 @@ func main() {
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis)
 
+	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
 
 	initGames(gameHolder)
 
@@ -68,7 +69,6 @@ func initGames(holder *server.GameHolder) {
 	holder.Add(&game.ExampleATGame{})
 	holder.Add(&game.RTGame{})
 }
-
 
 func redisConnect(config *server.Config) radix.Client{
 
