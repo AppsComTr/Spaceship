@@ -59,6 +59,43 @@ func (as *Server) AuthenticateFacebook(context context.Context, request *api.Aut
 
 }
 
+func (as *Server) UnlinkFacebook(context context.Context, request *empty.Empty) (*empty.Empty, error) {
+
+	emptyS := &empty.Empty{}
+
+	userID := context.Value(ctxUserIDKey{}).(string)
+
+	user := &model.User{}
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+	err := db.C(user.GetCollectionName()).Find(bson.M{
+		"_id": bson.ObjectIdHex(userID),
+	}).One(user)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, status.Error(404, "User couldn't found")
+		}else{
+			as.logger.Errorw("Error while trying to fetch user from db", "userID", userID, "error", err)
+			return nil, status.Error(500, "Internal server error")
+		}
+	}
+
+	user.FacebookId = ""
+
+	err = db.C(user.GetCollectionName()).Update(bson.M{
+		"_id": bson.ObjectIdHex(userID),
+	}, user)
+	if err != nil {
+		as.logger.Errorw("Error while updating user in db", "userID", userID, "error", err)
+		return nil, status.Error(500, "Internal server error")
+	}
+
+	return emptyS, nil
+
+}
+
 func (as *Server) UpdateUser(context context.Context, request *api.UserUpdate) (*api.User, error) {
 
 	userID := context.Value(ctxUserIDKey{}).(string)
