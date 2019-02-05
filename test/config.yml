@@ -12,3 +12,4 @@ authconfig:
   jwtsecret: asdasdqweqasdqwwe
   tokenexpiretime: 86400
 port: 7350
+developmentenabled: yes

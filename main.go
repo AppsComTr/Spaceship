@@ -26,41 +26,43 @@ var (
 
 func main() {
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-
 	config := &server.Config{}
 	err := configor.Load(config, "config.yml")
 	if err != nil {
 		log.Panicln("Error while reading configurations from config.yml")
 	}
-	redis := redisConnect(config)
 
-	db := server.ConnectDB(config)
-	notification := server.NewNotificationService(db, config)
-	leaderboard := server.NewLeaderboard(db)
-	stats := server.NewStatsHolder()
+	logger := server.NewLogger(config)
+	defer logger.Sync()
+
+	redis := redisConnect(config, logger)
+
+	db := server.ConnectDB(config, logger)
+	notification := server.NewNotificationService(db, config, logger)
+	leaderboard := server.NewLeaderboard(db, logger)
+	stats := server.NewStatsHolder(logger)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard, notification)
 	leaderboard.SetGameHolder(gameHolder)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification)
-	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis, notification)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger)
+	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis, notification, logger)
 
 	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
 
 	initGames(gameHolder)
 
-	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline, db, leaderboard, stats)
+	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline, db, leaderboard, stats, logger)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 
-	log.Println("Startup was completed")
+	logger.Info("Startup was completed")
 
 	<-c
 
-	log.Println("Shutdown was started")
+	logger.Info("Shutdown was started")
 	server.Stop()
-	log.Println("Shutdown was completed")
+	logger.Info("Shutdown was completed")
 
 	os.Exit(1)
 
@@ -72,7 +74,7 @@ func initGames(holder *server.GameHolder) {
 	holder.Add(&game.RTGame{})
 }
 
-func redisConnect(config *server.Config) radix.Client{
+func redisConnect(config *server.Config, logger *server.Logger) radix.Client{
 
 	var redisClient radix.Client
 	var err error
@@ -80,12 +82,12 @@ func redisConnect(config *server.Config) radix.Client{
 	if config.RedisConfig.CluesterEnabled {
 		redisClient, err = radix.NewCluster([]string{config.RedisConfig.ConnString})
 		if err != nil {
-			log.Fatalln("Redis Connection Failed", err)
+			logger.Fatalw("Redis Connection Failed", "error", err)
 		}
 	}else{
 		redisClient, err = radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
 		if err != nil {
-			log.Fatalln("Redis Connection Failed", err)
+			logger.Fatalw("Redis Connection Failed", "error", err)
 		}
 	}
 	return redisClient

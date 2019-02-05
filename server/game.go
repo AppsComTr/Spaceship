@@ -4,7 +4,6 @@ import (
 	"errors"
 	"github.com/kayalardanmehmet/redsync-radix"
 	"github.com/mediocregopher/radix/v3"
-	"log"
 	"spaceship/model"
 	"spaceship/socketapi"
 	"strings"
@@ -24,7 +23,7 @@ type GameSpecs struct {
 }
 
 //This should be used in matchmaker module
-func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipeline, session Session) (*socketapi.GameData, error) {
+func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipeline, session Session, logger *Logger) (*socketapi.GameData, error) {
 	gameData := &socketapi.GameData{
 		Id: matchID,
 		Name: modeName,
@@ -40,7 +39,7 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 
 	gameData.ModeName = game.GetName()
 
-	err := game.Init(gameData)
+	err := game.Init(gameData, logger)
 
 	if err != nil {
 		return nil, err
@@ -66,7 +65,7 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 				select {
 				case <- ticker.C:
 
-					if !loopGame(holder, gameData.Id, game, ticker, pipeline){
+					if !loopGame(holder, gameData.Id, game, ticker, pipeline, logger){
 						return
 					}
 
@@ -80,12 +79,12 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 	return gameData, nil
 }
 
-func loopGame(holder *GameHolder, gameID string, game GameController, ticker *time.Ticker, pipeline *Pipeline) bool {
+func loopGame(holder *GameHolder, gameID string, game GameController, ticker *time.Ticker, pipeline *Pipeline, logger *Logger) bool {
 
 	rs := redsyncradix.New([]radix.Client{holder.redis})
 	mutex := rs.NewMutex("lock|" + gameID)
 	if err := mutex.Lock(); err != nil {
-		log.Println(err.Error())
+		logger.Errorw("Error while using lock", "key", "lock|" + gameID, "error", err)
 	} else {
 		defer mutex.Unlock()
 	}
@@ -93,21 +92,21 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 	var gameDataS string
 	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + gameID))
 	if err != nil {
-		log.Println(err)
+		logger.Errorw("Redis error", "command", "GET", "key", "game-" + gameID, "error", err)
 		return false
 	}
 
 	var rGameData socketapi.GameData
 	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), &rGameData)
 	if err != nil {
-		log.Println(err)
+		logger.Errorw("Error while unmarshaling game data", "gameData", gameDataS, "error", err)
 		return false
 	}
 
 	queuedDatasS := make([]string, 0)
 	err = holder.redis.Do(radix.Cmd(&queuedDatasS, "LRANGE", "game|update|" + gameID, "0", "-1"))
 	if err != nil {
-		log.Println(err)
+		logger.Errorw("Redis error", "command", "LRANGE", "key", "game|update|" + gameID, "error", err)
 		return false
 	}
 
@@ -117,7 +116,7 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 		var queuedData socketapi.MatchUpdateQueue
 		err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(queuedDataS), &queuedData)
 		if err != nil {
-			log.Println(err)
+			logger.Errorw("Error while unmarshling queued data", "data", queuedDatas, "error", err)
 			return false
 		}
 
@@ -125,7 +124,7 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 
 	}
 
-	isFinished := game.Loop(&rGameData, queuedDatas, holder.leaderboard, holder.notification)
+	isFinished := game.Loop(&rGameData, queuedDatas, holder.leaderboard, holder.notification, logger)
 
 	rGameData.UpdatedAt = time.Now().Unix()
 
@@ -140,13 +139,13 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 
 		err = db.C(gameDataDB.GetCollectionName()).Insert(gameDataDB)
 		if err != nil {
-			log.Println(err)
+			logger.Errorw("Error while inserting game data to db", "data", gameDataDB, "error", err)
 			return false
 		}
 
 		err = holder.redis.Do(radix.Cmd(nil, "DEL", "game-" + rGameData.Id))
 		if err != nil {
-			log.Println(err)
+			logger.Errorw("Redis error", "command", "DEL", "key", "game-" + rGameData.Id, "error", err)
 		}
 
 		ticker.Stop()
@@ -155,13 +154,13 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 
 		gameDataS, err = holder.jsonProtoMarshler.MarshalToString(&rGameData)
 		if err != nil {
-			log.Println(err)
+			logger.Errorw("Error while marshling game date", "gameData", rGameData, "error", err)
 			return false
 		}
 
 		err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + rGameData.Id, gameDataS))
 		if err != nil {
-			log.Println(err)
+			logger.Errorw("Redis error", "command", "SET", "key", "game-" + rGameData.Id, "error", err)
 		}
 
 	}
@@ -174,7 +173,7 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 
 }
 
-func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.GameData, error) {
+func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger) (*socketapi.GameData, error) {
 	gameData := &socketapi.GameData{}
 
 	var gameDataS string
@@ -208,7 +207,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 
 	gameData.UserIDs = append(gameData.UserIDs, session.UserID())
 
-	err = game.Join(gameData, session, holder.notification)
+	err = game.Join(gameData, session, holder.notification, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +285,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session) (*socketapi.Ga
 //
 //}
 
-func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.MatchUpdate) (*socketapi.GameData, error) {
+func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.MatchUpdate, logger *Logger) (*socketapi.GameData, error) {
 
 	gameData := &socketapi.GameData{}
 
@@ -330,7 +329,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 	}else{
 
-		isFinished, err := game.Update(gameData, session, updateData.Metadata, holder.leaderboard, holder.notification)
+		isFinished, err := game.Update(gameData, session, updateData.Metadata, holder.leaderboard, holder.notification, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -353,7 +352,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 			err = holder.redis.Do(radix.Cmd(nil, "DEL", "game-" + gameData.Id))
 			if err != nil {
-				log.Println(err)
+				logger.Errorw("Redis error", "command", "DEL", "key", "game-" + gameData.Id, "error", err)
 			}
 
 		}else{

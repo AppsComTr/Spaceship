@@ -2,7 +2,6 @@ package game
 
 import (
 	"encoding/json"
-	"log"
 	"spaceship/server"
 	"spaceship/socketapi"
 )
@@ -36,7 +35,7 @@ func (tg *RTGame) GetName() string {
 	return "realtimeTestGame"
 }
 
-func (tg *RTGame) Init(gameData *socketapi.GameData) error {
+func (tg *RTGame) Init(gameData *socketapi.GameData, logger *server.Logger) error {
 
 	rtGameData := RTGameData{
 		GameState: RT_GAME_STATE_CONTINUE,
@@ -53,23 +52,23 @@ func (tg *RTGame) Init(gameData *socketapi.GameData) error {
 	return nil
 }
 
-func (tg *RTGame) Join(gameData *socketapi.GameData, session server.Session, notification *server.Notification) error {
+func (tg *RTGame) Join(gameData *socketapi.GameData, session server.Session, notification *server.Notification, logger *server.Logger) error {
 
 	return nil
 
 }
 
 //Users should create their own metadata format. Ex: json string
-func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification) (bool, error) {
+func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) (bool, error) {
 	return false, nil
 }
 
-func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification) bool {
+func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) bool {
 
 	var rtGameData RTGameData
 	err := json.Unmarshal([]byte(gameData.Metadata), &rtGameData)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err)
 		return true
 	}
 
@@ -79,7 +78,7 @@ func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.Mat
 		var updateData RTGameUpdateData
 		err = json.Unmarshal([]byte(queueItem.Metadata), &updateData)
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			return true
 		}
 

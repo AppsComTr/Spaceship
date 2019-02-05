@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"github.com/prometheus/common/log"
 	"go.opencensus.io/exporter/prometheus"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -16,7 +15,7 @@ type Stats struct {
 	mRequest *stats.Int64Measure
 }
 
-func NewStatsHolder() *Stats {
+func NewStatsHolder(logger *Logger) *Stats {
 
 	mSocketRequest := stats.Int64("spaceship/socket_requests", "Socket Request Count", "By")
 	vSocketRequestSum := &view.View{
@@ -43,14 +42,14 @@ func NewStatsHolder() *Stats {
 	}
 
 	if err := view.Register(vSocketRequestSum, vSocketConnectionSum, vRequestSum); err != nil {
-		log.Fatalln("Error while registering stat views")
+		logger.Fatal("Error while registering stat views")
 	}
 
 	pe, err := prometheus.NewExporter(prometheus.Options{
 		Namespace: "spaceship",
 	})
 	if err != nil {
-		log.Fatalln("Error while creating new prometheus exporter")
+		logger.Fatal("Error while creating new prometheus exporter")
 	}
 
 	view.RegisterExporter(pe)

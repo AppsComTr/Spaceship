@@ -4,7 +4,6 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/tbalthazar/onesignal-go"
-	"log"
 	"spaceship/model"
 )
 
@@ -12,9 +11,10 @@ type Notification struct {
 	db *mgo.Session
 	config *Config
 	client *onesignal.Client
+	logger *Logger
 }
 
-func NewNotificationService(db *mgo.Session, config *Config) *Notification {
+func NewNotificationService(db *mgo.Session, config *Config, logger *Logger) *Notification {
 
 	client := onesignal.NewClient(nil)
 	client.AppKey = config.NotificationConfig.AppKey
@@ -23,6 +23,7 @@ func NewNotificationService(db *mgo.Session, config *Config) *Notification {
 		db: db,
 		config: config,
 		client: client,
+		logger: logger,
 	}
 
 }
@@ -46,7 +47,7 @@ func (n Notification) SendNotificationWithUserIDs(headings map[string]string, bo
 		},
 	}).All(&notificationTokens)
 	if err != nil {
-		log.Println(err)
+		n.logger.Errorw("Error while fetching all notification tokens belongs to given user ids", "userIDs", userIDs, "error", err)
 		return
 	}
 
@@ -84,7 +85,7 @@ func (n Notification) SendNotificationWithTokens(headings map[string]string, bod
 		_, _, err := n.client.Notifications.Create(notificationReq)
 
 		if err != nil {
-			log.Println(err)
+			n.logger.Errorw("Error while creating notification request", "headings", headings, "contents", body, "error", err)
 			return
 		}
 	}

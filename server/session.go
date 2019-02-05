@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"go.uber.org/atomic"
-	"log"
 	"net"
 	"spaceship/socketapi"
 	"sync"
@@ -30,6 +29,7 @@ type session struct {
 	sessionHolder *SessionHolder
 	config *Config
 	stats *Stats
+	logger *Logger
 	conn *websocket.Conn
 
 	jsonProtoMarshler *jsonpb.Marshaler
@@ -45,7 +45,7 @@ type session struct {
 	closed bool
 }
 
-func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config, sessionHolder *SessionHolder, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, stats *Stats) Session {
+func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config, sessionHolder *SessionHolder, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, stats *Stats, logger *Logger) Session {
 
 	sessionID := uuid.Must(uuid.NewV4(), nil)
 
@@ -67,6 +67,7 @@ func NewSession(userID string, username string, expiry int64, clientIP string, c
 		conn: conn,
 		sessionHolder: sessionHolder,
 		stats: stats,
+		logger: logger,
 
 		jsonProtoMarshler: jsonProtoMarshler,
 		jsonProtoUnmarshler: jsonProtoUnmarshler,
@@ -116,11 +117,10 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 	defer s.Close()
 	s.conn.SetReadLimit(4096)
 	if err := s.conn.SetReadDeadline(time.Now().Add(s.pongWaitTime)); err != nil {
-		log.Println("Error occured while trying to set read deadline", errors.WithStack(err))
+		s.logger.Infow("Error occured while trying to set read deadline", "error", err)
 		return
 	}
 	s.conn.SetPongHandler(func(string) error {
-		//log.Println("pong received")
 		s.resetPingTimer()
 		return nil
 	})
@@ -133,11 +133,11 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived) {
-				log.Println("Socket connection was closed id: " + s.ID().String())
+				s.logger.Infow("Socket connection was closed", "id", s.ID().String())
 			}else if e, ok := err.(*net.OpError); !ok || e.Err.Error() != "use of closed network connection" {
-				log.Println("Socket connection was closed id: " + s.ID().String())
+				s.logger.Infow("Socket connection was closed", "id", s.ID().String())
 			}else{
-				log.Println("Error occured while reading message on socket connection", errors.WithStack(err))
+				s.logger.Errorw("Error occured while reading message on socket connection", "error", err)
 			}
 			//Even if connection was closed or error occured we should break the loop
 			break
@@ -158,7 +158,7 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 		err = s.jsonProtoUnmarshler.Unmarshal(bytes.NewReader(data), request)
 
 		if err != nil {
-			log.Println("Read message error", errors.WithStack(err))
+			s.logger.Errorw("Read message error", "error", err)
 			//break
 		}
 
@@ -194,7 +194,7 @@ func (s *session) resetPingTimer() bool {
 	err := s.conn.SetReadDeadline(time.Now().Add(s.pongWaitTime))
 	s.Unlock()
 	if err != nil {
-		log.Println("Error while trying to set read deadline on socket connection", errors.WithStack(err))
+		s.logger.Error("Error while trying to set read deadline on socket connection", "error", err)
 		s.Close()
 		return false
 	}
@@ -222,7 +222,7 @@ func (s *session) processOutgoing() {
 			s.conn.SetWriteDeadline(time.Now().Add(10*time.Second))
 			if err := s.conn.WriteMessage(websocket.TextMessage, payload); err != nil {
 				s.Unlock()
-				log.Println("Could not write message", errors.WithStack(err))
+				s.logger.Errorw("Could not write message", "error", err)
 				return
 			}
 			s.Unlock()
@@ -239,13 +239,13 @@ func (s *session) pingNow() bool {
 	}
 	if err := s.conn.SetWriteDeadline(time.Now().Add(10*time.Second)); err != nil {
 		s.Unlock()
-		log.Println("Could not set write deadline to ping", err)
+		s.logger.Errorw("Could not set write deadline to ping", "error", err)
 		return false
 	}
 	err := s.conn.WriteMessage(websocket.PingMessage, []byte{})
 	s.Unlock()
 	if err != nil {
-		log.Println("Could not send ping", err)
+		s.logger.Errorw("Could not send ping", "error", err)
 		return false
 	}
 
@@ -262,7 +262,7 @@ func (s *session) Send(isStream bool, mode uint8, envelope *socketapi.Envelope) 
 		payload = buf.Bytes()
 	}
 	if err != nil {
-		log.Print("Could not marshal envelope", errors.WithStack(err))
+		s.logger.Errorw("Could not marshal envelope", "envelope", envelope, "error", err)
 		return err
 	}
 
@@ -292,7 +292,7 @@ func (s *session) SendBytes(isStream bool, mode uint8, payload []byte) error {
 		// Terminate the connection immediately because the only alternative that doesn't block the server is
 		// to start dropping messages, which might cause unexpected behaviour.
 		s.Unlock()
-		log.Println("Could not write message, session outgoing queue full")
+		s.logger.Warn("Could not write message, session outgoing queue full")
 		s.Close()
 		return errors.New("outgoing queue full")
 	}
@@ -317,11 +317,11 @@ func (s *session) Close() {
 	close(s.outgoingCh)
 
 	if err := s.conn.WriteControl(websocket.CloseMessage, []byte{}, time.Now().Add(s.writeWaitTime)); err != nil {
-		log.Println("Couldn't send close message to client")
+		s.logger.Error("Couldn't send close message to client")
 	}
 
 	if err := s.conn.Close(); err != nil {
-		log.Println("Couldn't close socket connection for session id: " + s.id.String())
+		s.logger.Errorw("Couldn't close socket connection", "sessionID", s.id.String(), "error", err)
 	}
 
 }

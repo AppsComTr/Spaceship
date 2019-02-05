@@ -9,7 +9,6 @@ import (
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"runtime"
 	"spaceship/api"
@@ -40,14 +39,17 @@ func NewServer(t *testing.T) (*server.Server) {
 	}
 	redis := redisConnect(t, config)
 
-	db := server.ConnectDB(config)
-	notification := server.NewNotificationService(db, config)
-	leaderboard := server.NewLeaderboard(db)
-	stats := server.NewStatsHolder()
+	logger := server.NewLogger(config)
+	defer logger.Sync()
+
+	db := server.ConnectDB(config, logger)
+	notification := server.NewNotificationService(db, config, logger)
+	leaderboard := server.NewLeaderboard(db, logger)
+	stats := server.NewStatsHolder(logger)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonpbMarshaler, jsonpbUnmarshaler, leaderboard, notification)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification)
-	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis, notification)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger)
+	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis, notification, logger)
 
 	gameHolder.Add(&PTGame{})
 	gameHolder.Add(&ATGame{})
@@ -55,7 +57,7 @@ func NewServer(t *testing.T) (*server.Server) {
 
 	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
 
-	return server.StartServer(sessionHolder, gameHolder, config, jsonpbMarshaler, jsonpbUnmarshaler, pipeline, db, leaderboard, stats)
+	return server.StartServer(sessionHolder, gameHolder, config, jsonpbMarshaler, jsonpbUnmarshaler, pipeline, db, leaderboard, stats, logger)
 
 }
 
@@ -188,7 +190,6 @@ func ReadMessage(failChan chan string, onMessageChan chan []byte) (socketapi.Env
 	payload = <- onMessageChan
 
 	if err := jsonpbUnmarshaler.Unmarshal(bytes.NewReader(payload), &env); err != nil {
-		log.Println(payload)
 		failChan <- err.Error()
 		runtime.Goexit()
 	}

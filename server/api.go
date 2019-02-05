@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"log"
 	"net"
 	"net/http"
 	"spaceship/apigrpc"
@@ -37,24 +36,25 @@ type Server struct {
 	gameHolder *GameHolder
 	leaderboard *Leaderboard
 	stats *Stats
+	logger *Logger
 }
 
 func (s *Server) Stop() {
 	if err := s.grpcGatewayServer.Shutdown(context.Background()); err != nil {
-		log.Println("Couldn't shutdown grpc gateway server")
+		s.logger.Errorw("Couldn't shutdown grpc gateway server", "error", err)
 	}
 
 	s.grpcServer.GracefulStop()
 }
 
-func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, db *mgo.Session, leaderboard *Leaderboard, stats *Stats) *Server {
+func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, db *mgo.Session, leaderboard *Leaderboard, stats *Stats, logger *Logger) *Server {
 
 	port := config.Port
 
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 			stats.IncrRequest()
-			nCtx, err := securityInterceptorFunc(ctx, req, info, config)
+			nCtx, err := securityInterceptorFunc(ctx, req, info, config, logger)
 			if err != nil {
 				return nil, err
 			}
@@ -72,18 +72,19 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		db: db,
 		leaderboard: leaderboard,
 		stats: stats,
+		logger: logger,
 	}
 
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)
 
-	log.Printf("Starting server for gRPC requests on port %d", port-1)
+	logger.Infof("Starting server for gRPC requests on port %d", port-1)
 	go func(){
 		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port-1))
 		if err != nil {
-			log.Fatal("Error while creating listener for gRPC server")
+			logger.Fatal("Error while creating listener for gRPC server")
 		}
 		if err := grpcServer.Serve(listener); err != nil {
-			log.Fatal("Error while binding listener to gRPC server")
+			logger.Fatal("Error while binding listener to gRPC server")
 		}
 	}()
 
@@ -112,13 +113,13 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 	}
 
 	if err := apigrpc.RegisterSpaceShipHandlerFromEndpoint(ctx, grpcGateway, dialAddr, dialOpts); err != nil {
-		log.Fatal("Error while registering gateway to gRPC server", err)
+		logger.Fatalw("Error while registering gateway to gRPC server", "error", err)
 	}
 
 	grpcGatewayRouter := mux.NewRouter()
 	// Special case routes. Do NOT enable compression on WebSocket route, it results in "http: response.Write on hijacked connection" errors.
 	grpcGatewayRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }).Methods("GET")
-	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, pipeline, stats)).Methods("GET")
+	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, pipeline, stats, logger)).Methods("GET")
 	grpcGatewayRouter.Handle("/metrics", stats.prometheusExporter)
 	fs := http.FileServer(http.Dir("/var/spaceshipassets/"))
 	grpcGatewayRouter.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
@@ -145,14 +146,14 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		Handler:        handlerWithCORS,
 	}
 
-	log.Printf("Starting gateway server for HTTP requests on port %d", port)
+	logger.Infof("Starting gateway server for HTTP requests on port %d", port)
 	go func(){
 		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 		if err != nil {
-			log.Fatal("Error while creating listener for gateway server", err)
+			logger.Fatalw("Error while creating listener for gateway server", "error", err)
 		}
 		if err := s.grpcGatewayServer.Serve(listener); err != nil && err != http.ErrServerClosed {
-			log.Fatal("Error while serving gRPC gateway server", err)
+			logger.Fatalw("Error while serving gRPC gateway server", "error", err)
 		}
 	}()
 
@@ -160,7 +161,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 
 }
 
-func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, config *Config) (context.Context, error) {
+func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, config *Config, logger *Logger) (context.Context, error) {
 	switch info.FullMethod {
 	case "/spaceship.api.SpaceShip/AuthenticateFacebook":
 		fallthrough
@@ -171,7 +172,7 @@ func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.Un
 		// This endpoint requires autrhozation with bearer
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
-			log.Println("Cannot extract metadata from incoming context")
+			logger.Errorw("Cannot extract metadata from incoming context", "context", ctx)
 			return nil, status.Error(codes.FailedPrecondition, "Cannot extract metadata from incoming context")
 		}
 		auth, ok := md["authorization"]
@@ -228,13 +229,13 @@ func parseToken(hmacSecretByte []byte, tokenString string) (userID string, usern
 	return userID, claims["usn"].(string), int64(claims["exp"].(float64)), true
 }
 
-func ConnectDB(config *Config) *mgo.Session {
+func ConnectDB(config *Config, logger *Logger) *mgo.Session {
 
 	conn, err := mgo.DialWithTimeout(config.DBConfig.ConnString, time.Duration(30 * time.Second))
 	if err != nil {
-		log.Fatal("Cannot dial mongo", err)
+		logger.Fatalw("Cannot dial mongo", "error", err)
 	}
-	log.Println("Mongo connection completed")
+	logger.Info("Mongo connection completed")
 	return conn
 
 }

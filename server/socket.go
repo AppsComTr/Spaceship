@@ -4,13 +4,12 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
-	"log"
 	"net"
 	"net/http"
 	"strings"
 )
 
-func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, stats *Stats) func(http.ResponseWriter, *http.Request) {
+func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, pipeline *Pipeline, stats *Stats, logger *Logger) func(http.ResponseWriter, *http.Request) {
 	upgrader := &websocket.Upgrader{
 		ReadBufferSize: 4096,
 		WriteBufferSize: 4096,
@@ -49,18 +48,18 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder 
 		} else if addrErr, ok := err.(*net.AddrError); ok && addrErr.Err == "missing port in address" {
 			clientIP = clientAddr
 		} else {
-			log.Println("Could not extract client address from request.", errors.WithStack(err))
+			logger.Warnw("Could not extract client address from request.", "error", errors.WithStack(err))
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println("Websocket upgrade was failed", errors.WithStack(err))
+			logger.Errorw("Websocket upgrade was failed", "error", errors.WithStack(err))
 			return
 		}
 
-		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, sessionHolder, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, stats)
+		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, sessionHolder, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, stats, logger)
 
-		log.Println("New socket connection was established id: " + s.ID().String())
+		logger.Infow("New socket connection was established", "id", s.ID().String())
 
 		sessionHolder.add(s)
 

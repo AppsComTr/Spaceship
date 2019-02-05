@@ -3,7 +3,6 @@ package game
 import (
 	"encoding/json"
 	"github.com/pkg/errors"
-	"log"
 	"spaceship/server"
 	"spaceship/socketapi"
 )
@@ -46,7 +45,7 @@ func (tg *ExampleATGame) GetName() string {
 	return "exampleATGame"
 }
 
-func (tg *ExampleATGame) Init(gameData *socketapi.GameData) error {
+func (tg *ExampleATGame) Init(gameData *socketapi.GameData, logger *server.Logger) error {
 
 	ptGameData := EXATGameData{
 		Board: "zzzxxxyyyaaabbbccc",
@@ -62,7 +61,7 @@ func (tg *ExampleATGame) Init(gameData *socketapi.GameData) error {
 	return nil
 }
 
-func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Session, notification *server.Notification) error {
+func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Session, notification *server.Notification, logger *server.Logger) error {
 
 	var ptGameData EXATGameData
 
@@ -99,7 +98,7 @@ func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Sessi
 //}
 
 //Users should create their own metadata format. Ex: json string
-func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification) (bool, error) {
+func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) (bool, error) {
 
 	var ptGameUpdateData EXATGameUpdateData
 	err := json.Unmarshal([]byte(metadata), &ptGameUpdateData)
@@ -129,29 +128,29 @@ func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Ses
 				if ptGameData.HomeUser.FoundWordCount > ptGameData.AwayUser.FoundWordCount {
 					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 100)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 20)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 				}else if ptGameData.HomeUser.FoundWordCount < ptGameData.AwayUser.FoundWordCount {
 					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 100)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 20)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 				}else{
 					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 50)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 50)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 				}
 			}
@@ -172,29 +171,29 @@ func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Ses
 				if ptGameData.HomeUser.FoundWordCount > ptGameData.AwayUser.FoundWordCount {
 					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 100)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 20)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 				}else if ptGameData.HomeUser.FoundWordCount < ptGameData.AwayUser.FoundWordCount {
 					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 100)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 20)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 				}else{
 					err = leaderboard.Score(ptGameData.HomeUser.UserID, tg.GetName(), 50)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 					err = leaderboard.Score(ptGameData.AwayUser.UserID, tg.GetName(), 50)
 					if err != nil {
-						log.Println(err)
+						logger.Error(err)
 					}
 				}
 			}
@@ -215,7 +214,7 @@ func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Ses
 	return isGameFinished, nil
 }
 
-func (tg *ExampleATGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification) bool {
+func (tg *ExampleATGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) bool {
 
 	return true
 

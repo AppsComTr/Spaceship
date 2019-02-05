@@ -1,7 +1,6 @@
 package server
 
 import (
-	"log"
 	"spaceship/socketapi"
 )
 
@@ -12,7 +11,7 @@ func (p Pipeline) broadcastGame(gameData *socketapi.GameData) {
 		session := p.sessionHolder.GetByUserID(userID)
 		err := session.Send(false, 0, message)
 		if err != nil {
-			log.Println("Error occured while trying to broadcast over game")
+			p.logger.Errorw("Error occured while trying to broadcast over game", "gameData", gameData, "error", err)
 		}
 	}
 }

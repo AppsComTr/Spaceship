@@ -3,7 +3,6 @@ package server
 import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"log"
 	"spaceship/model"
 	"strconv"
 	"time"
@@ -12,11 +11,13 @@ import (
 type Leaderboard struct {
 	db *mgo.Session
 	gameHolder *GameHolder
+	logger *Logger
 }
 
-func NewLeaderboard(db *mgo.Session) *Leaderboard {
+func NewLeaderboard(db *mgo.Session, logger *Logger) *Leaderboard {
 	return &Leaderboard{
 		db: db,
+		logger: logger,
 	}
 }
 
@@ -205,7 +206,7 @@ func (l Leaderboard) GetUserRank(typeName string, gameName string, userID string
 		"userID": bson.ObjectIdHex(userID),
 	}).One(score)
 	if err != nil {
-		log.Println(err)
+		l.logger.Errorw("Error while fetching user score", "userID", userID, "type", typeName, "gameName", gameNameQ, "typeID", typeID, "error", err)
 		return 0
 	}
 
@@ -219,7 +220,7 @@ func (l Leaderboard) GetUserRank(typeName string, gameName string, userID string
 		},
 	}).Sort("-score").Count()
 	if err != nil {
-		log.Println(err)
+		l.logger.Errorw("Error while getting count of users", "userID", userID, "type", typeName, "gameName", gameNameQ, "typeID", typeID, "error", err)
 		return 0
 	}
 
@@ -232,7 +233,7 @@ func (l Leaderboard) GetUserRank(typeName string, gameName string, userID string
 		"score": score.Score,
 	}).Sort("-score").All(&scores)
 	if err != nil {
-		log.Println(err)
+		l.logger.Errorw("Error while getting users that has same score with requested user", "userID", userID, "type", typeName, "gameName", gameNameQ, "typeID", typeID, "error", err)
 		return 0
 	}
 

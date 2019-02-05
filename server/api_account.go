@@ -14,7 +14,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io/ioutil"
-	"log"
 	"os"
 	"spaceship/api"
 	"spaceship/model"
@@ -76,7 +75,7 @@ func (as *Server) UpdateUser(context context.Context, request *api.UserUpdate) (
 		if err == mgo.ErrNotFound {
 			return nil, status.Error(404, "User couldn't found")
 		}else{
-			log.Println(err)
+			as.logger.Errorw("Error while trying to fetch user from db", "userID", userID, "error", err)
 			return nil, status.Error(500, "Internal server error")
 		}
 	}
@@ -89,20 +88,20 @@ func (as *Server) UpdateUser(context context.Context, request *api.UserUpdate) (
 		buff := bytes.Buffer{}
 		_, err = buff.ReadFrom(reader)
 		if err != nil {
-			log.Println(err)
+			as.logger.Errorw("Error while reading from base64 decoder", "error", err)
 			return nil, status.Error(500, "Internal server error")
 		}
 
-		_, format, err := image.Decode(bytes.NewReader(buff.Bytes()))
+		_, _, err := image.Decode(bytes.NewReader(buff.Bytes()))
 		if err != nil {
+			as.logger.Errorw("Error while trying to decode image from bytes", "error", err)
 			return nil, status.Error(400, err.Error())
 		}
-		log.Println(format)
 
 		if _, err := os.Stat("/var/spaceshipassets"); os.IsNotExist(err) {
 			err = os.Mkdir("/var/spaceshipassets", os.ModePerm)
 			if err != nil {
-				log.Println(err)
+				as.logger.Errorw("Error while creating directory for assets", "error", err)
 				return nil, status.Error(500, "Internal server error")
 			}
 		}
@@ -118,7 +117,7 @@ func (as *Server) UpdateUser(context context.Context, request *api.UserUpdate) (
 
 		err = ioutil.WriteFile("/var/spaceshipassets/"+fileName, buff.Bytes(), 0644)
 		if err != nil {
-			log.Println(err)
+			as.logger.Errorw("Error while writing image to file", "fileName", fileName, "error", err)
 			return nil, status.Error(500, "Internal server error")
 		}
 		user.AvatarUrl = as.config.ApiURL + "/assets/" + fileName
@@ -129,7 +128,7 @@ func (as *Server) UpdateUser(context context.Context, request *api.UserUpdate) (
 		"_id": bson.ObjectIdHex(userID),
 	}, user)
 	if err != nil {
-		log.Println(err)
+		as.logger.Errorw("Error while updating user in db", "userID", userID, "error", err)
 		return nil, status.Error(500, "Internal server error")
 	}
 
@@ -201,7 +200,7 @@ func (as *Server) UpdateNotificationToken(context context.Context, request *api.
 		if err == mgo.ErrNotFound{
 			return nil, status.Error(400, "Cannot find token with given values")
 		}else{
-			log.Println(err)
+			as.logger.Errorw("Error while notification token user from db", "userID", userID, "oldToken", oldToken, "error", err)
 			return nil, status.Error(500, "DB error: " + err.Error())
 		}
 	}

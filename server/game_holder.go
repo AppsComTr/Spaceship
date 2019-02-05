@@ -9,13 +9,13 @@ import (
 
 type GameController interface {
 	GetName() string
-	Init(gameData *socketapi.GameData) error
-	Join(gameData *socketapi.GameData, session Session, notification *Notification) error
+	Init(gameData *socketapi.GameData, logger *Logger) error
+	Join(gameData *socketapi.GameData, session Session, notification *Notification, logger *Logger) error
 	//Leave(gameData *socketapi.GameData, session Session) error
 	//Should return true if game is finished, so framework can remove gamedata from redis and store it in db
-	Update(gameData *socketapi.GameData, session Session, metadata string, leaderboard *Leaderboard, notification *Notification) (bool, error)
+	Update(gameData *socketapi.GameData, session Session, metadata string, leaderboard *Leaderboard, notification *Notification, logger *Logger) (bool, error)
 	//This will be called instead of update if game is realtime game with tick rate
-	Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *Leaderboard, notification *Notification) bool
+	Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *Leaderboard, notification *Notification, logger *Logger) bool
 	GetGameSpecs() GameSpecs
 }
 

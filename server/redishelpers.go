@@ -3,11 +3,10 @@ package server
 import (
 	"context"
 	"github.com/mediocregopher/radix/v3"
-	"log"
 	"time"
 )
 
-func Watcher(ctx context.Context, redis radix.Client, key string) <- chan int {
+func Watcher(ctx context.Context, redis radix.Client, key string, logger *Logger) <- chan int {
 	watchChan := make(chan int)
 
 	go func(){
@@ -17,12 +16,12 @@ func Watcher(ctx context.Context, redis radix.Client, key string) <- chan int {
 			select {
 			case <- ctx.Done():
 				close(watchChan)
-				log.Println("Watcher closes channel")
+				logger.Info("Watcher closes channel")
 				return
 			default:
 				err := redis.Do(radix.Cmd(&result, "SCARD", key))
 				if err != nil {
-					log.Println("Watcher SCARD err: ", err)
+					logger.Errorw("Redis error", "command", "SCARD", "key", key, "error", err)
 					watchChan <- -1 //means err
 					close(watchChan)
 					break

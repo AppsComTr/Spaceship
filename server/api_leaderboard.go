@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/globalsign/mgo/bson"
 	"google.golang.org/grpc/status"
-	"log"
 	"spaceship/api"
 	"spaceship/model"
 	"strconv"
@@ -48,7 +47,7 @@ func (as *Server) GetLeaderboard(context context.Context, request *api.Leaderboa
 			"_id": score.UserID,
 		}).One(&user)
 		if err != nil {
-			log.Println(err)
+			as.logger.Errorw("Error while fetching user from db", "userID", score.UserID, "error", err)
 		}
 		scorePb := api.Leaderboard{}
 		scorePb.User = user.MapToPB()

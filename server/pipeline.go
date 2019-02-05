@@ -5,7 +5,6 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/kayalardanmehmet/redsync-radix"
 	"github.com/mediocregopher/radix/v3"
-	"log"
 	"spaceship/socketapi"
 )
 
@@ -19,9 +18,10 @@ type Pipeline struct {
 	db *mgo.Session
 	redis radix.Client
 	notification *Notification
+	logger *Logger
 }
 
-func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session, redis radix.Client, notification *Notification) *Pipeline {
+func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session, redis radix.Client, notification *Notification, logger *Logger) *Pipeline {
 	return &Pipeline{
 		config: config,
 		gameHolder: gameHolder,
@@ -32,6 +32,7 @@ func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoU
 		db: db,
 		redis: redis,
 		notification: notification,
+		logger: logger,
 	}
 }
 
@@ -45,15 +46,15 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 		rs := redsyncradix.New([]radix.Client{p.redis})
 		mutex := rs.NewMutex("lock|" + message.GameID)
 		if err := mutex.Lock(); err != nil {
-			log.Println(err.Error())
+			p.logger.Errorw("Error while using lock", "key", "lock|" + message.GameID)
 		} else {
 			defer mutex.Unlock()
 		}
 
-		_, err := UpdateGame(p.gameHolder, session, p, message)
+		_, err := UpdateGame(p.gameHolder, session, p, message, p.logger)
 
 		if err != nil {
-			log.Println("Error occured while updating game state", err)
+			p.logger.Errorw("Error occured while updating game state", "error", err)
 			_ = session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 				Code: int32(socketapi.Error_RUNTIME_EXCEPTION),
 				Message: "Error occured while updating game state: " + err.Error(),
@@ -70,7 +71,7 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 	default:
 		// If we reached this point the envelope was valid but the contents are missing or unknown.
 		// Usually caused by a version mismatch, and should cause the session making this pipeline request to close.
-		log.Println("Unrecognizable payload received.", envelope)
+		p.logger.Errorw("Unrecognizable payload received.", "envelope", envelope)
 		_ =session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 			Code:    int32(socketapi.Error_UNRECOGNIZED_PAYLOAD),
 			Message: "Unrecognized message.",

@@ -2,7 +2,6 @@ package test
 
 import (
 	"encoding/json"
-	"log"
 	"math/rand"
 	"spaceship/socketapi"
 	"testing"
@@ -116,7 +115,6 @@ func TestRTGame(t *testing.T) {
 				var gameData RTGameData
 				err := json.Unmarshal([]byte(matchUpdateResp.GameData.Metadata), &gameData)
 				if err != nil{
-					log.Println(err)
 					failChan <- err.Error()
 					return
 				}
