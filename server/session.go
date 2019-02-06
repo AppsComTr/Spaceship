@@ -325,3 +325,7 @@ func (s *session) Close() {
 	}
 
 }
+
+func (s session) IsClosed() bool {
+	return s.closed
+}
