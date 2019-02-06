@@ -1,7 +1,7 @@
 dbconfig:
-  connstring: "mongo"
+  connstring: "mongodb://spaceship:spaceshiptest@spaceship0-shard-00-00-ylmjb.gcp.mongodb.net:27017,spaceship0-shard-00-01-ylmjb.gcp.mongodb.net:27017,spaceship0-shard-00-02-ylmjb.gcp.mongodb.net:27017/test?ssl=true&replicaSet=Spaceship0-shard-0&authSource=admin"
 redisconfig:
-  connstring: "redis:6379"
+  connstring: "10.0.0.3:6379"
   clusterenabled: no
 socketconfig:
   pingperiodtime: 8000
