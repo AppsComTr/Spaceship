@@ -18,7 +18,7 @@ type Matchmaker interface {
 	Find(session Session,gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error)
 	Join(pipeline *Pipeline, session Session, matchID string) (*socketapi.GameData, error)
 	Leave(session Session, matchID string) error
-	LeaveActiveGames(sessionID uuid.UUID) error
+	LeaveActiveGames(userID string) error
 }
 
 type LocalMatchmaker struct {
@@ -565,11 +565,10 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 	return nil
 }
 
-func (m *LocalMatchmaker) LeaveActiveGames(sessionID uuid.UUID) error {
+func (m *LocalMatchmaker) LeaveActiveGames(userID string) error {
 	m.Lock()
 	defer m.Unlock()
 
-	userID := m.sessionHolder.Get(sessionID).UserID()
 	redisKey := "pam:"+userID
 
 	var pams []string

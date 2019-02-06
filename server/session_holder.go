@@ -4,6 +4,7 @@ import (
 	"github.com/satori/go.uuid"
 	"spaceship/socketapi"
 	"sync"
+	"time"
 )
 
 type Session interface {
@@ -22,6 +23,8 @@ type Session interface {
 	Send(isStream bool, mode uint8, envelope *socketapi.Envelope) error
 	SendBytes(isStream bool, mode uint8, payload []byte) error
 
+	IsClosed() bool
+
 	//Close()
 }
 
@@ -32,7 +35,7 @@ type SessionHolder struct {
 	sessionsPerUserID map[string]Session
 	config *Config
 
-	leaveListener func(sessionID uuid.UUID) error
+	leaveListener func(userID string) error
 }
 
 func NewSessionHolder(config *Config) *SessionHolder {
@@ -77,14 +80,31 @@ func (r *SessionHolder) remove(sessionID uuid.UUID) {
 }
 
 func (r *SessionHolder) leave(sessionID uuid.UUID) {
-	r.Lock()
-	if r.leaveListener != nil {
-		r.leaveListener(sessionID)
+
+	session := r.Get(sessionID)
+
+	if session != nil {
+
+		//Check if user still has session after 5 seconds to eliminate network switch problems
+		go func(userID string, r *SessionHolder, sessionID uuid.UUID){
+
+			time.Sleep(time.Duration(5)*time.Second)
+
+			session := r.GetByUserID(userID)
+
+			if session == nil || session.IsClosed() {
+				if r.leaveListener != nil {
+					_ = r.leaveListener(userID)
+				}
+
+			}
+
+		}(session.UserID(), r, sessionID)
+
 	}
-	r.Unlock()
 }
 
-func (r *SessionHolder) SetLeaveListener(fn func(sessionID uuid.UUID) error) {
+func (r *SessionHolder) SetLeaveListener(fn func(userID string) error) {
 	r.Lock()
 	r.leaveListener = fn
 	r.Unlock()
