@@ -10,18 +10,5 @@ RUN set -ex \
       && apk del git mercurial .build-deps
 
 WORKDIR $GOPATH/src/$pkg
-RUN go build -o $pkg
-
-FROM alpine
-
-RUN apk update && \
-    apk add --no-cache ca-certificates && \
-    update-ca-certificates
-
-COPY --from=build-env /go/src/spaceship/spaceship /
-COPY --from=build-env /go/src/spaceship/config.yml /
-
 EXPOSE 7350
-CMD ["./spaceship"]
-
-
+CMD ["go", "run", "spaceship"]
