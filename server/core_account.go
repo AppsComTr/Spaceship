@@ -152,6 +152,17 @@ func AuthenticateFacebook(fingerprint string, fbToken string, conn *mgo.Session)
 			return nil, errors.New("error while search user in db " + err.Error())
 		}
 	}else{
+		//Fingerprint also should be updated for this user
+		if user.Fingerprint != fingerprint {
+
+			user.Fingerprint = fingerprint
+
+			err = db.C(user.GetCollectionName()).UpdateId(user.Id, user)
+			if err != nil{
+				return nil, errors.New("error while updating user " + err.Error())
+			}
+
+		}
 		return user, nil
 	}
 
