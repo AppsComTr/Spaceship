@@ -120,17 +120,21 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 		s.logger.Infow("Error occured while trying to set read deadline", "error", err)
 		return
 	}
+	//When pong message is received from client for this session, we can reset ping timer
 	s.conn.SetPongHandler(func(string) error {
 		s.resetPingTimer()
 		return nil
 	})
 
+	//The routine that will handle outgoing messages
 	go s.processOutgoing()
 
 	for {
 		_, data, err := s.conn.ReadMessage()
 		s.stats.IncrSocketRequest()
 
+		//Closed connections can be detected at this point. Just need to check error type.
+		//Anyway, if error will happen, need to break this loop
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived) {
 				s.logger.Infow("Socket connection was closed", "id", s.ID().String())
@@ -143,6 +147,8 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 			break
 		}
 
+		//If enough message was received in reset period, timer can be reset
+		//Because we know the connection is open, no need to send ping to keep alive
 		s.receivedMsgDecrement--
 		if s.receivedMsgDecrement < 1 {
 			s.receivedMsgDecrement = s.config.SocketConfig.ReceivedMessageDecrementCount
@@ -203,6 +209,8 @@ func (s *session) resetPingTimer() bool {
 
 func (s *session) processOutgoing() {
 	defer s.Close()
+	//This method starts infinite loop to detect outgoing ping or payload messages from relevant channels
+	//Send method writes data to a channel don't send any data directly. This datas is being catched with this loop
 	for {
 		select {
 		case <-s.pingTimer.C:
@@ -301,6 +309,8 @@ func (s *session) SendBytes(isStream bool, mode uint8, payload []byte) error {
 func (s *session) Close() {
 
 	s.Lock()
+	//This method can be triggered from many places. closed flag is being used to detect if socket connection is already closed
+	//If connection is already closed, don't need to run again
 	if s.closed {
 		s.Unlock()
 		return

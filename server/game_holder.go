@@ -7,6 +7,11 @@ import (
 	"sync"
 )
 
+//Interface that controls game logic
+//When new game is created, Init method will be triggered
+//If an user joins to game by match maker, Join method will be triggered
+//If defined game is not a real time game, update method will be triggered when clients send data about this game
+//Else Loop method will be triggered with defined interval in gamespecs. Datas which clients send will be buffered until this method works
 type GameController interface {
 	GetName() string
 	Init(gameData *socketapi.GameData, logger *Logger) error

@@ -20,6 +20,7 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder 
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		//Connections which are made for this endpoint, will be upgraded to websocket connection if token is valid
 		token := r.URL.Query().Get("token")
 		if token == "" {
 			http.Error(w, "Invalid token", 401)
@@ -63,6 +64,7 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder 
 
 		sessionHolder.add(s)
 
+		//Incoming requests will be handled in sessions Consume method and will be passed to pipeline to run logic part of the each request
 		s.Consume(pipeline.handleSocketRequests)
 
 	}

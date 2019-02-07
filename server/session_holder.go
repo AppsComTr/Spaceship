@@ -80,12 +80,13 @@ func (r *SessionHolder) remove(sessionID uuid.UUID) {
 }
 
 func (r *SessionHolder) leave(sessionID uuid.UUID) {
+	//Check if user still has session after 5 seconds to eliminate network switch problems
+	//If there is no connection belongs to this user, leave listener can be run to exclude user from its active games
 
 	session := r.Get(sessionID)
 
 	if session != nil {
 
-		//Check if user still has session after 5 seconds to eliminate network switch problems
 		go func(userID string, r *SessionHolder, sessionID uuid.UUID){
 
 			time.Sleep(time.Duration(5)*time.Second)

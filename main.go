@@ -9,7 +9,6 @@ import (
 	"spaceship/game"
 	"spaceship/server"
 	"syscall"
-	"github.com/mediocregopher/radix/v3"
 )
 
 var (
@@ -35,8 +34,7 @@ func main() {
 	logger := server.NewLogger(config)
 	defer logger.Sync()
 
-	redis := redisConnect(config, logger)
-
+	redis := server.ConnectRedis(config, logger)
 	db := server.ConnectDB(config, logger)
 	notification := server.NewNotificationService(db, config, logger)
 	leaderboard := server.NewLeaderboard(db, logger)
@@ -49,6 +47,7 @@ func main() {
 
 	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
 
+	//Games should be attached to game holder
 	initGames(gameHolder)
 
 	server := server.StartServer(sessionHolder, gameHolder, config, jsonProtoMarshaler, jsonProtoUnmarshler, pipeline, db, leaderboard, stats, logger)
@@ -72,23 +71,4 @@ func initGames(holder *server.GameHolder) {
 	holder.Add(&game.ExampleGame{})
 	holder.Add(&game.ExampleATGame{})
 	holder.Add(&game.RTGame{})
-}
-
-func redisConnect(config *server.Config, logger *server.Logger) radix.Client{
-
-	var redisClient radix.Client
-	var err error
-
-	if config.RedisConfig.CluesterEnabled {
-		redisClient, err = radix.NewCluster([]string{config.RedisConfig.ConnString})
-		if err != nil {
-			logger.Fatalw("Redis Connection Failed", "error", err)
-		}
-	}else{
-		redisClient, err = radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
-		if err != nil {
-			logger.Fatalw("Redis Connection Failed", "error", err)
-		}
-	}
-	return redisClient
 }

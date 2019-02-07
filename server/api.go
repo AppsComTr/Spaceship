@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	grpcRuntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/mediocregopher/radix/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -51,9 +52,11 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 
 	port := config.Port
 
+	//We should set middleware to check token in the header is valid for endpoints which required authorization
 	serverOpts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 			stats.IncrRequest()
+			//Requests will be passed to our interceptor function to verify
 			nCtx, err := securityInterceptorFunc(ctx, req, info, config, logger)
 			if err != nil {
 				return nil, err
@@ -75,8 +78,11 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		logger: logger,
 	}
 
+	//Grpc server is registered to our implementation of server struct
 	apigrpc.RegisterSpaceShipServer(grpcServer, s)
 
+	//Grpc server can be started, but it should be work in another routine not to block current one
+	//We'll define grpc gateway server also
 	logger.Infof("Starting server for gRPC requests on port %d", port-1)
 	go func(){
 		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port-1))
@@ -104,6 +110,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 			}
 			return metadata.MD(p)
 		}),
+		//This marshaler option is used to prevent not serializing of fields with default values
 		grpcRuntime.WithMarshalerOption(grpcRuntime.MIMEWildcard, &grpcRuntime.JSONPb{OrigName: true, EmitDefaults: true}),
 	)
 
@@ -116,21 +123,21 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		logger.Fatalw("Error while registering gateway to gRPC server", "error", err)
 	}
 
+	//Router should be created to define custom endpoints. One of them will be used for web socket connections.
 	grpcGatewayRouter := mux.NewRouter()
-	// Special case routes. Do NOT enable compression on WebSocket route, it results in "http: response.Write on hijacked connection" errors.
 	grpcGatewayRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(200) }).Methods("GET")
 	grpcGatewayRouter.HandleFunc("/ws", NewSocketAcceptor(sessionHolder, config, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, pipeline, stats, logger)).Methods("GET")
 	grpcGatewayRouter.Handle("/metrics", stats.prometheusExporter)
+	//Server should also serve static files (like avatar etc..), so need to define file server on router
 	fs := http.FileServer(http.Dir("/var/spaceshipassets/"))
 	grpcGatewayRouter.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
 
+	//All other requests should be handled by grpc gateway server.
 	grpcGatewayRouter.NewRoute().HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Do not allow clients to set certain headers.
-		// Currently disallowed headers:
-		// "Grpc-Timeout"
+		//We can delete or modify headers before passing request to gateway server.
 		r.Header.Del("Grpc-Timeout")
 
-		// Allow GRPC Gateway to handle the request.
+		// Pass request to gateway server
 		grpcGateway.ServeHTTP(w, r)
 	})
 
@@ -146,6 +153,7 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		Handler:        handlerWithCORS,
 	}
 
+	//Gateway server also should be started in another routine not to block current one
 	logger.Infof("Starting gateway server for HTTP requests on port %d", port)
 	go func(){
 		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -168,8 +176,8 @@ func securityInterceptorFunc(ctx context.Context, req interface{}, info *grpc.Un
 	case "/spaceship.api.SpaceShip/AuthenticateFingerprint":
 		//No security everyone can make request to this endpoint
 		return ctx, nil
+	//Requests that will be defined at the above won't be checked for authorization
 	default:
-		// This endpoint requires autrhozation with bearer
 		md, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			logger.Errorw("Cannot extract metadata from incoming context", "context", ctx)
@@ -238,6 +246,25 @@ func ConnectDB(config *Config, logger *Logger) *mgo.Session {
 	logger.Info("Mongo connection completed")
 	return conn
 
+}
+
+func ConnectRedis(config *Config, logger *Logger) radix.Client{
+
+	var redisClient radix.Client
+	var err error
+
+	if config.RedisConfig.CluesterEnabled {
+		redisClient, err = radix.NewCluster([]string{config.RedisConfig.ConnString})
+		if err != nil {
+			logger.Fatalw("Redis Connection Failed", "error", err)
+		}
+	}else{
+		redisClient, err = radix.NewPool("tcp", config.RedisConfig.ConnString, 1)
+		if err != nil {
+			logger.Fatalw("Redis Connection Failed", "error", err)
+		}
+	}
+	return redisClient
 }
 
 func decompressHandler( h http.Handler) http.HandlerFunc {
