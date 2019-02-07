@@ -165,7 +165,7 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 
 		if err != nil {
 			s.logger.Errorw("Read message error", "error", err)
-			//break
+			break
 		}
 
 		if !handlerFunc(s, request) {
