@@ -14,9 +14,9 @@ func NewLogger(config *Config) (*Logger) {
 	var logger *zap.Logger
 
 	if config.DevelopmentEnabled {
-		logger, _ = zap.NewDevelopment()
+		logger, _ = zap.NewDevelopment(zap.AddCallerSkip(1))
 	}else{
-		logger, _ = zap.NewProduction()
+		logger, _ = zap.NewProduction(zap.AddCallerSkip(1))
 	}
 
 	sugar := logger.Sugar()
