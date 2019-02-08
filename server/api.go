@@ -136,10 +136,10 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 	//And compress response body if client supports it
 	//And check limit max body size in requests
 	handlerDecompress := decompressHandler(grpcGateway)
-	handlerCompressRespnse := handlers.CompressHandler(handlerDecompress)
+	handlerCompressResponse := handlers.CompressHandler(handlerDecompress)
 	handlerMaxBodySize := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, config.MaxRequestBodySize)
-		handlerCompressRespnse.ServeHTTP(w, r)
+		handlerCompressResponse.ServeHTTP(w, r)
 	})
 
 	//All other requests should be handled by grpc gateway server.
