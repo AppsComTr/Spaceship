@@ -21,6 +21,7 @@ type Config struct {
 	}
 	Port int `default:"7350"`
 	ApiURL string `default:"http://localhost"`
+	MaxRequestBodySize int64 `default:"4096"`
 	DevelopmentEnabled bool `default:"false"`
 	NotificationConfig struct{
 		AppKey string

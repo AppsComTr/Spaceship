@@ -132,13 +132,23 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 	fs := http.FileServer(http.Dir("/var/spaceshipassets/"))
 	grpcGatewayRouter.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", fs))
 
+	//First request body need to be decompressed if data was compressed with gzip
+	//And compress response body if client supports it
+	//And check limit max body size in requests
+	handlerDecompress := decompressHandler(grpcGateway)
+	handlerCompressRespnse := handlers.CompressHandler(handlerDecompress)
+	handlerMaxBodySize := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, config.MaxRequestBodySize)
+		handlerCompressRespnse.ServeHTTP(w, r)
+	})
+
 	//All other requests should be handled by grpc gateway server.
 	grpcGatewayRouter.NewRoute().HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		//We can delete or modify headers before passing request to gateway server.
 		r.Header.Del("Grpc-Timeout")
 
 		// Pass request to gateway server
-		grpcGateway.ServeHTTP(w, r)
+		handlerMaxBodySize.ServeHTTP(w, r)
 	})
 
 	// Enable CORS on all requests.
