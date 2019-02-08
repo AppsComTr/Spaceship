@@ -214,7 +214,7 @@ func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Ses
 	return isGameFinished, nil
 }
 
-func (tg *ExampleATGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) bool {
+func (tg *ExampleATGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.GameUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) bool {
 
 	return true
 

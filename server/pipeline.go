@@ -39,9 +39,9 @@ func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoU
 func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Envelope) bool {
 
 	switch envelope.Message.(type) {
-	case *socketapi.Envelope_MatchUpdate:
+	case *socketapi.Envelope_GameUpdate:
 
-		message := envelope.GetMatchUpdate()
+		message := envelope.GetGameUpdate()
 
 		rs := redsyncradix.New([]radix.Client{p.redis})
 		mutex := rs.NewMutex("lock|" + message.GameID)

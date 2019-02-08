@@ -113,10 +113,10 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 		return false
 	}
 
-	queuedDatas := make([]socketapi.MatchUpdateQueue, 0)
+	queuedDatas := make([]socketapi.GameUpdateQueue, 0)
 	for _, queuedDataS := range queuedDatasS {
 
-		var queuedData socketapi.MatchUpdateQueue
+		var queuedData socketapi.GameUpdateQueue
 		err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(queuedDataS), &queuedData)
 		if err != nil {
 			logger.Errorw("Error while unmarshling queued data", "data", queuedDatas, "error", err)
@@ -297,7 +297,7 @@ func LeaveGame(gameID string, holder *GameHolder, session Session, pipeline *Pip
 
 }
 
-func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.MatchUpdate, logger *Logger) (*socketapi.GameData, error) {
+func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.GameUpdate, logger *Logger) (*socketapi.GameData, error) {
 
 	gameData := &socketapi.GameData{}
 
@@ -323,7 +323,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 	//TODO: we need to check if game exists with given game id
 	if game.GetGameSpecs().TickInterval > 0 {
 
-		queueUpdateData := &socketapi.MatchUpdateQueue{
+		queueUpdateData := &socketapi.GameUpdateQueue{
 			GameID: updateData.GameID,
 			UserID: session.UserID(),
 			Metadata: updateData.Metadata,

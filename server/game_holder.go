@@ -20,7 +20,7 @@ type GameController interface {
 	//Should return true if game is finished, so framework can remove gamedata from redis and store it in db
 	Update(gameData *socketapi.GameData, session Session, metadata string, leaderboard *Leaderboard, notification *Notification, logger *Logger) (bool, error)
 	//This will be called instead of update if game is realtime game with tick rate
-	Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *Leaderboard, notification *Notification, logger *Logger) bool
+	Loop(gameData *socketapi.GameData, queuedDatas []socketapi.GameUpdateQueue, leaderboard *Leaderboard, notification *Notification, logger *Logger) bool
 	GetGameSpecs() GameSpecs
 }
 

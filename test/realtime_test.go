@@ -85,8 +85,8 @@ func TestRTGame(t *testing.T) {
 						failChan <- err.Error()
 						return
 					}
-					WriteMessage(failChan, conn, &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchUpdate{
-						MatchUpdate: &socketapi.MatchUpdate{
+					WriteMessage(failChan, conn, &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_GameUpdate{
+						GameUpdate: &socketapi.GameUpdate{
 							GameID: matchStart.GameData.Id,
 							Metadata: string(matchUpdateRaw),
 						},
@@ -100,13 +100,13 @@ func TestRTGame(t *testing.T) {
 				message = ReadMessage(failChan, onMessageChan)
 
 				for {
-					if message.GetMatchUpdateResp() != nil {
+					if message.GetGameUpdateResp() != nil {
 						break
 					}
 					message = ReadMessage(failChan, onMessageChan)
 				}
 
-				matchUpdateResp := message.GetMatchUpdateResp()
+				matchUpdateResp := message.GetGameUpdateResp()
 				if matchUpdateResp == nil {
 					failChan <- "Expected message match update resp but unrecognized message was returned"
 					return

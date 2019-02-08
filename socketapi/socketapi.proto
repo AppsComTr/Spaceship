@@ -22,28 +22,28 @@ message Envelope {
         Error error = 2;
         MatchError match_error = 3;
         MatchJoinResp match_start = 4;
-        MatchUpdate match_update = 5;
+        GameUpdate game_update = 5;
         MatchFind match_find = 6;
         MatchJoin match_join = 7;
         MatchLeave match_leave = 8;
         MatchEntry match_entry = 9;
         GameData game_data = 10;
-        MatchUpdateResp match_update_resp = 11;
+        GameUpdateResp game_update_resp = 11;
     }
 }
 
-message MatchUpdate {
+message GameUpdate {
     string gameID = 1;
     string metadata = 2;
 }
 
-message MatchUpdateQueue {
+message GameUpdateQueue {
     string gameID = 1;
     string userID = 2;
     string metadata = 3;
 }
 
-message MatchUpdateResp {
+message GameUpdateResp {
     GameData game_data = 1;
 }
 

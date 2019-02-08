@@ -68,7 +68,7 @@ func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, m
 	return false, nil
 }
 
-func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.MatchUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) bool {
+func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.GameUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) bool {
 
 	var rtGameData RTGameData
 	err := json.Unmarshal([]byte(gameData.Metadata), &rtGameData)
