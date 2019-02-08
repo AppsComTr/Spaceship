@@ -16,7 +16,7 @@ type GameController interface {
 	GetName() string
 	Init(gameData *socketapi.GameData, logger *Logger) error
 	Join(gameData *socketapi.GameData, session Session, notification *Notification, logger *Logger) error
-	//Leave(gameData *socketapi.GameData, session Session) error
+	Leave(gameData *socketapi.GameData, session Session, logger *Logger) error
 	//Should return true if game is finished, so framework can remove gamedata from redis and store it in db
 	Update(gameData *socketapi.GameData, session Session, metadata string, leaderboard *Leaderboard, notification *Notification, logger *Logger) (bool, error)
 	//This will be called instead of update if game is realtime game with tick rate

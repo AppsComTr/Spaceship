@@ -1,5 +1,5 @@
-cirello.io v1.3.0 h1:dtu7tFUcDfqTauVxMdmai10j+4cj/IXs7mffc7aazIo=
-cirello.io v1.3.0/go.mod h1:rJ2elDyyrLNpzWB6y02TMjdJSUsSNWfJcubR3AZ+WsE=
+cirello.io/goherokuname v0.0.0-20190130145001-e47e9d08f3ca h1:TrBS4GDR6IaTFc7Z+PBsvOJ8JTZEjKst9Nn+Tn1tziE=
+cirello.io/goherokuname v0.0.0-20190130145001-e47e9d08f3ca/go.mod h1:lfp+7qXdkiHbLqAvsA4v2Cyll5djTKZTiNi+iDfPJcw=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 git.apache.org/thrift.git v0.0.0-20181218151757-9b75e4fe745a/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=

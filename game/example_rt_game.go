@@ -58,6 +58,11 @@ func (tg *RTGame) Join(gameData *socketapi.GameData, session server.Session, not
 
 }
 
+func (tg *RTGame) Leave(gameData *socketapi.GameData, session server.Session, logger *server.Logger) error {
+
+	return nil
+}
+
 //Users should create their own metadata format. Ex: json string
 func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) (bool, error) {
 	return false, nil

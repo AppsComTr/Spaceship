@@ -92,10 +92,10 @@ func (tg *ExampleATGame) Join(gameData *socketapi.GameData, session server.Sessi
 	return nil
 }
 
-//func (tg *TestGame) Leave(gameID string, session server.Session) error {
-//
-//	return nil
-//}
+func (tg *ExampleATGame) Leave(gameData *socketapi.GameData, session server.Session, logger *server.Logger) error {
+
+	return nil
+}
 
 //Users should create their own metadata format. Ex: json string
 func (tg *ExampleATGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) (bool, error) {

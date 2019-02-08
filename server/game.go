@@ -42,16 +42,19 @@ func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipe
 	err := game.Init(gameData, logger)
 
 	if err != nil {
+		logger.Errorw("Error in game controllers init method", "error", err)
 		return nil, err
 	}
 
 	gameDataS, err := holder.jsonProtoMarshler.MarshalToString(gameData)
 	if err != nil {
+		logger.Errorw("Error while trying to marshaling game data", "error", err)
 		return nil, err
 	}
 
 	err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameData.Id, gameDataS))
 	if err != nil {
+		logger.Errorw("Redis error", "command", "SET", "key", "game-" + gameData.Id, "val", gameDataS, "error", err)
 		return nil, err
 	}
 
@@ -180,6 +183,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 
 	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + gameID))
 	if err != nil {
+		logger.Errorw("Redis error", "command", "GET", "key", "game-" + gameID, "error", err)
 		return nil, err
 	}
 
@@ -209,6 +213,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 
 	err = game.Join(gameData, session, holder.notification, logger)
 	if err != nil {
+		logger.Errorw("Error in game controllers join method", "error", err)
 		return nil, err
 	}
 
@@ -216,11 +221,13 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 
 	gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
 	if err != nil {
+		logger.Errorw("Error while trying to marshaling game data", "error", err)
 		return nil, err
 	}
 
 	err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameID, gameDataS))
 	if err != nil {
+		logger.Errorw("Redis error", "command", "game-" + gameID, "val", gameDataS, "error", err)
 		return nil, err
 	}
 
@@ -228,62 +235,67 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 	return gameData, nil
 }
 
-//func LeaveGame(gameID string, holder *GameHolder, session Session, pipeline *Pipeline) (*socketapi.GameData, error) {
-//
-//	gameData := &socketapi.GameData{}
-//
-//	var gameDataS string
-//
-//	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", gameID))
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), gameData)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	game := holder.Get(gameData.ModeName)
-//	if game == nil {
-//		return nil, errors.New("Game couldn't found with given game name")
-//	}
-//
-//	userIndex := -1
-//	for i, userID := range gameData.UserIDs {
-//		if userID == session.UserID() {
-//			userIndex = i
-//			break
-//		}
-//	}
-//
-//	if userIndex == -1 {
-//		return nil, errors.New("This user is already not in this game")
-//	}
-//
-//	gameData.UserIDs = append(gameData.UserIDs[:userIndex], gameData.UserIDs[userIndex+1:]...)
-//
-//	err = game.Leave(gameData, session)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	gameData.UpdatedAt = time.Now().Unix()
-//
-//	gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	//TODO: maybe we need to broadcast updated data to inform clients
-//	return gameData, nil
-//
-//}
+func LeaveGame(gameID string, holder *GameHolder, session Session, pipeline *Pipeline, logger *Logger) (*socketapi.GameData, error) {
+
+	gameData := &socketapi.GameData{}
+
+	var gameDataS string
+
+	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", gameID))
+	if err != nil {
+		logger.Errorw("Redis error", "command", "GET", "key", gameID, "error", err)
+		return nil, err
+	}
+
+	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), gameData)
+	if err != nil {
+		logger.Errorw("Error while trying to unmarshal game data", "gameData", gameDataS, "error", err)
+		return nil, err
+	}
+
+	game := holder.Get(gameData.ModeName)
+	if game == nil {
+		return nil, errors.New("Game couldn't found with given game name")
+	}
+
+	userIndex := -1
+	for i, userID := range gameData.UserIDs {
+		if userID == session.UserID() {
+			userIndex = i
+			break
+		}
+	}
+
+	if userIndex == -1 {
+		return nil, errors.New("This user is already not in this game")
+	}
+
+	gameData.UserIDs = append(gameData.UserIDs[:userIndex], gameData.UserIDs[userIndex+1:]...)
+
+	err = game.Leave(gameData, session, logger)
+	if err != nil {
+		logger.Errorw("Error in game controllers leave method", "error", err)
+		return nil, err
+	}
+
+	gameData.UpdatedAt = time.Now().Unix()
+
+	gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
+	if err != nil {
+		logger.Errorw("Error while trying to marshal game data", "error", err)
+		return nil, err
+	}
+
+	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
+	if err != nil {
+		logger.Errorw("Redis error", "command", "SET", "key", gameData.Id, "val", gameDataS, "error", err)
+		return nil, err
+	}
+
+	//TODO: maybe we need to broadcast updated data to inform clients
+	return gameData, nil
+
+}
 
 func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.MatchUpdate, logger *Logger) (*socketapi.GameData, error) {
 
@@ -293,11 +305,13 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + updateData.GameID))
 	if err != nil {
+		logger.Errorw("Redis error", "command", "GET", "key", "game-" + updateData.GameID)
 		return nil, err
 	}
 
 	err = holder.jsonProtoUnmarshler.Unmarshal(strings.NewReader(gameDataS), gameData)
 	if err != nil {
+		logger.Errorw("Erroro while trying to unmarshal game data", "gameData", gameDataS, "error", err)
 		return nil, err
 	}
 
@@ -322,6 +336,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 		err = holder.redis.Do(radix.Cmd(nil, "RPUSH", "game|update|" + gameData.Id, updateDataS))
 		if err != nil {
+			logger.Errorw("Redis error", "command", "RPUSH", "key", "game|update|" + gameData.Id, "data", updateDataS, "error", err)
 			return nil, err
 		}
 
@@ -347,6 +362,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 			err = db.C(gameDataDB.GetCollectionName()).Insert(gameDataDB)
 			if err != nil {
+				logger.Errorw("Error while trying to insert game data to database", "data", gameDataDB, "error", err)
 				return nil, err
 			}
 
@@ -359,11 +375,13 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 
 			gameDataS, err = holder.jsonProtoMarshler.MarshalToString(gameData)
 			if err != nil {
+				logger.Errorw("Error while trying to marshal game data", "gameData", gameData, "error", err)
 				return nil, err
 			}
 
 			err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameData.Id, gameDataS))
 			if err != nil {
+				logger.Errorw("Redis error", "command", "SET", "key", "game-" + gameData.Id, "val", gameDataS, "error", err)
 				return nil, err
 			}
 
