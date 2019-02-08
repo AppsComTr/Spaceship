@@ -76,21 +76,75 @@ func AuthenticateFacebook(fingerprint string, fbToken string, conn *mgo.Session)
 	defer cConn.Close()
 	db := cConn.DB("spaceship")
 
-	fbRes, err := fb.Get("/me", fb.Params{
+
+
+	fbApp := fb.New("", "")
+	fbSession := fbApp.Session(fbToken)
+	fbRes, err := fbSession.Get("/me", fb.Params{
 		"fields": "first_name,email",
-		"access_token": fbToken,
 	})
 
 	if err != nil {
 		return nil, errors.New("error while accesing facebook api " + err.Error())
 	}
 
+	//Fetch user friends
+	friendsRes, err := fbSession.Get("/me/friends", fb.Params{
+		"limit": "500",
+	})
+	if err != nil {
+		return nil, errors.New("error while accesing facebook api for friends " + err.Error())
+	}
+
+	friendsPaging, err := friendsRes.Paging(fbSession)
+	if err != nil {
+		return nil, errors.New("error while paging fb result" + err.Error())
+	}
+
+	var allResults []fb.Result
+	allResults = append(allResults, friendsPaging.Data()...)
+
+	for{
+		noMore, err := friendsPaging.Next()
+		if err != nil {
+			return nil, errors.New("error while paging fb result" + err.Error())
+		}
+		if noMore {
+			break
+		}
+
+		allResults = append(allResults, friendsPaging.Data()...)
+	}
+
+	var allFriendsFBIDs []string
+
+	for _, friendRes := range allResults {
+		allFriendsFBIDs = append(allFriendsFBIDs, friendRes["id"].(string))
+	}
+
+	var friendUsers []model.User
+	var friendUserIDs []bson.ObjectId
+	err = db.C(model.User{}.GetCollectionName()).Find(bson.M{
+		"facebookID": bson.M{
+			"$in": allFriendsFBIDs,
+		},
+	}).All(&friendUsers)
+	if err != nil {
+		return nil, errors.New("error while fetching all friends of user from db")
+	}
+
+	for _, user := range friendUsers {
+		friendUserIDs = append(friendUserIDs, user.Id)
+	}
+
 	//First check if user exists with given facebook id
 	user := &model.User{}
 
 	err = db.C(user.GetCollectionName()).Find(bson.M{
-		"facebook_id": fbRes["id"],
+		"facebookID": fbRes["id"],
 	}).One(user)
+
+	var loggedInUserID bson.ObjectId
 
 	if err != nil {
 		if err == mgo.ErrNotFound {
@@ -115,13 +169,16 @@ func AuthenticateFacebook(fingerprint string, fbToken string, conn *mgo.Session)
 						username = goherokuname.HaikunateCustom("-", 4, "DfWx9873214560jzrl")
 					}
 
-					user := &model.User{
-						Id: bson.NewObjectId(),
+					loggedInUserID = bson.NewObjectId()
+
+					user = &model.User{
+						Id: loggedInUserID,
 						Username: username,
 						Fingerprint: fingerprint,
 						DisplayName: fbRes["first_name"].(string),
 						FacebookId: fbRes["id"].(string),
 						AvatarUrl: "http://graph.facebook.com/" + fbRes["id"].(string) + "/picture?type=square&type=normal",
+						Friends: friendUserIDs,
 					}
 
 					err = db.C(user.GetCollectionName()).Insert(&user)
@@ -129,29 +186,41 @@ func AuthenticateFacebook(fingerprint string, fbToken string, conn *mgo.Session)
 						return nil, err
 					}
 
-					return user, nil
-
 				}else{
 					return nil, err
 				}
 			}else{
 
+				loggedInUserID = user.Id
+
 				user.DisplayName = fbRes["first_name"].(string)
 				user.FacebookId = fbRes["id"].(string)
 				user.AvatarUrl = "http://graph.facebook.com/" + fbRes["id"].(string) + "/picture?type=square&type=normal"
+
+				//We should add friends to existing ones if not exist
+				friendsMap := make(map[bson.ObjectId]struct{}, 0)
+				for _, id := range user.Friends {
+					friendsMap[id] = struct{}{}
+				}
+
+				for _, id := range friendUserIDs {
+					if _, ok := friendsMap[id]; !ok {
+						user.Friends = append(user.Friends, id)
+					}
+				}
 
 				err = db.C(user.GetCollectionName()).UpdateId(user.Id, user)
 				if err != nil{
 					return nil, errors.New("error while updating user " + err.Error())
 				}
 
-				return user, nil
 			}
 
 		}else{
 			return nil, errors.New("error while search user in db " + err.Error())
 		}
 	}else{
+		loggedInUserID = user.Id
 		//Fingerprint also should be updated for this user
 		if user.Fingerprint != fingerprint {
 
@@ -163,7 +232,19 @@ func AuthenticateFacebook(fingerprint string, fbToken string, conn *mgo.Session)
 			}
 
 		}
-		return user, nil
 	}
+
+	//Now we should also add this user to other users as friend
+	if len(friendUserIDs) > 0 {
+		_ = db.C(user.GetCollectionName()).Update(bson.M{
+			"_id": bson.M{
+				"$in": friendUserIDs,
+			},
+		}, bson.M{"$addToSet": bson.M{
+			"friends": loggedInUserID,
+		}})
+	}
+
+	return user, nil
 
 }

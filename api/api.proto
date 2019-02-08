@@ -32,22 +32,27 @@ message User {
     string id = 1;
     // The username of the user's account.
     string username = 2;
-    // The fingerprint parameter for the user
-    string fingerprint = 3;
     // The display name of the user.
     string display_name = 4;
     // A URL for an avatar image.
     string avatar_url = 5;
     // Additional information stored as a JSON object.
     string metadata = 6;
-    // The Facebook id in the user's account.
-    string facebook_id = 7;
     // Indicates whether the user is currently online.
     bool online = 8;
     // The UNIX time when the user was created.
     google.protobuf.Timestamp create_time = 9;
     // The UNIX time when the user was last updated.
     google.protobuf.Timestamp update_time = 10;
+}
+
+message UserFriends {
+    repeated User friends = 1;
+}
+
+message FriendRequest {
+    string user_id = 1;
+    string username = 2;
 }
 
 message NotificationTokenUpdate {

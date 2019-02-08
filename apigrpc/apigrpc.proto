@@ -113,6 +113,25 @@ service SpaceShip {
         };
     }
 
+    rpc GetFriends(google.protobuf.Empty) returns (api.UserFriends) {
+        option (google.api.http) = {
+            get: "/v1/friends"
+        };
+    }
+
+    rpc AddFriend(api.FriendRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/friends"
+            body: "*"
+        };
+    }
+
+    rpc DeleteFriend(api.FriendRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/friends/{user_id}"
+        };
+    }
+
     rpc TestEcho(google.protobuf.Empty) returns (api.Session) {
         option (google.api.http) = {
             get: "/v1/echo"

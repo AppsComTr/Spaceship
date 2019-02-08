@@ -279,6 +279,152 @@ func (as *Server) DeleteNotificationToken(context context.Context, request *api.
 	return emptyS, nil
 }
 
+func (as *Server) GetFriends(context context.Context, empty *empty.Empty) (*api.UserFriends, error) {
+
+	resp := &api.UserFriends{
+		Friends: make([]*api.User, 0),
+	}
+
+	userID := context.Value(ctxUserIDKey{}).(string)
+
+	user := &model.User{}
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+	err := db.C(user.GetCollectionName()).Find(bson.M{
+		"_id": bson.ObjectIdHex(userID),
+	}).One(user)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, status.Error(404, "User couldn't found")
+		}else{
+			as.logger.Errorw("Error while trying to fetch user from db", "userID", userID, "error", err)
+			return nil, status.Error(500, "Internal server error")
+		}
+	}
+
+	if len(user.Friends) > 0 {
+		var friends []model.User
+
+		err = db.C(user.GetCollectionName()).Find(bson.M{
+			"_id": bson.M{
+				"$in": user.Friends,
+			},
+		}).All(&friends)
+		if err != nil {
+			return nil, status.Error(500, "Error while trying to fetch friends from db")
+		}
+
+		for _, friend := range friends {
+			resp.Friends = append(resp.Friends, friend.MapToPB())
+		}
+	}
+
+	return resp, nil
+
+}
+
+func (as *Server) AddFriend(context context.Context, request *api.FriendRequest) (*empty.Empty, error) {
+
+	friendUser := &model.User{}
+
+	userID := context.Value(ctxUserIDKey{}).(string)
+	friendID := strings.TrimSpace(request.UserId)
+	friendUsername := strings.TrimSpace(request.Username)
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+
+	query := bson.M{}
+
+	if friendID != "" {
+		if len(friendID) != 24 {
+			return nil, status.Error(400, "user_id is not valid")
+		}
+		query = bson.M{
+			"_id": bson.ObjectIdHex(friendID),
+		}
+	}else{
+		query = bson.M{
+			"username": friendUsername,
+		}
+	}
+
+	err := db.C(friendUser.GetCollectionName()).Find(query).One(friendUser)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, status.Error(404, "user couldn't be found with given parameters")
+		}
+		return nil, status.Error(500, "Error while trying to fetch user from db")
+	}
+
+	err = db.C(friendUser.GetCollectionName()).Update(bson.M{
+		"_id": bson.ObjectIdHex(userID),
+	}, bson.M{
+		"$addToSet": bson.M{
+			"friends": friendUser.Id,
+		},
+	})
+	if err != nil {
+		as.logger.Errorw("Error while trying to update friends list", "userID", userID, "friendID", friendID, "error", err)
+		return nil, status.Error(500, "Error while trying to update friends list")
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (as *Server) DeleteFriend(context context.Context, request *api.FriendRequest) (*empty.Empty, error) {
+
+	friendUser := &model.User{}
+
+	userID := context.Value(ctxUserIDKey{}).(string)
+	friendID := strings.TrimSpace(request.UserId)
+	friendUsername := strings.TrimSpace(request.Username)
+
+	conn := as.db.Copy()
+	defer conn.Close()
+	db := conn.DB("spaceship")
+
+	query := bson.M{}
+
+	if friendID != "" {
+		if len(friendID) != 24 {
+			return nil, status.Error(400, "user_id is not valid")
+		}
+		query = bson.M{
+			"_id": bson.ObjectIdHex(friendID),
+		}
+	}else{
+		query = bson.M{
+			"username": friendUsername,
+		}
+	}
+
+	err := db.C(friendUser.GetCollectionName()).Find(query).One(friendUser)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			return nil, status.Error(404, "user couldn't be found with given parameters")
+		}
+		return nil, status.Error(500, "Error while trying to fetch user from db")
+	}
+
+	err = db.C(model.User{}.GetCollectionName()).Update(bson.M{
+		"_id": bson.ObjectIdHex(userID),
+	}, bson.M{
+		"$pull": bson.M{
+			"friends": friendUser.Id,
+		},
+	})
+	if err != nil {
+		as.logger.Errorw("Error while trying to update friends list", "userID", userID, "friendID", friendID, "error", err)
+		return nil, status.Error(500, "Error while trying to update friends list")
+	}
+
+	return &empty.Empty{}, nil
+}
+
 func (as *Server) TestEcho(context context.Context, empty *empty.Empty) (*api.Session, error){
 	return &api.Session{
 		Token: "at",

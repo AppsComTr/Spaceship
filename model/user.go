@@ -15,17 +15,16 @@ type User struct {
 	Metadata string `bson:"metadata"`
 	FacebookId string `bson:"facebookID"`
 	Online bool `bson:"isOnline"`
+	Friends []bson.ObjectId `bson:"friends"`
 }
 
 func (u User) MapToPB() *api.User {
 	return &api.User{
 		Id: u.Id.Hex(),
 		Username: u.Username,
-		Fingerprint: u.Fingerprint,
 		DisplayName: u.DisplayName,
 		AvatarUrl: u.AvatarUrl,
 		Metadata: u.Metadata,
-		FacebookId: u.FacebookId,
 		Online: u.Online,
 	}
 }
@@ -33,11 +32,9 @@ func (u User) MapToPB() *api.User {
 func (u *User) MapFromPB(pbUser api.User) {
 	u.Id = bson.ObjectIdHex(pbUser.Id)
 	u.Username =  pbUser.Username
-	u.Fingerprint = pbUser.Fingerprint
 	u.DisplayName = pbUser.DisplayName
 	u.AvatarUrl = pbUser.AvatarUrl
 	u.Metadata = pbUser.Metadata
-	u.FacebookId = pbUser.FacebookId
 	u.Online = pbUser.Online
 }
 
