@@ -143,6 +143,6 @@ message GameData {
     string metadata = 3;
     int64 createdAt = 4;
     int64 updatedAt = 5;
-    string modeName = 6;
+    string gameName = 6;
     repeated string userIDs = 7;
 }

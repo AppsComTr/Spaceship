@@ -23,21 +23,21 @@ type GameSpecs struct {
 }
 
 //This should be used in matchmaker module
-func NewGame(matchID string, modeName string, holder *GameHolder, pipeline *Pipeline, session Session, logger *Logger) (*socketapi.GameData, error) {
+func NewGame(matchID string, gameName string, holder *GameHolder, pipeline *Pipeline, session Session, logger *Logger) (*socketapi.GameData, error) {
 	gameData := &socketapi.GameData{
 		Id: matchID,
-		Name: modeName,
+		Name: gameName,
 		CreatedAt: time.Now().Unix(),
 		UserIDs: make([]string, 0),
 	}
 
-	game := holder.Get(modeName)
+	game := holder.Get(gameName)
 
 	if game == nil {
 		return nil, errors.New("Game couldn't found with given game name")
 	}
 
-	gameData.ModeName = game.GetName()
+	gameData.GameName = game.GetName()
 
 	err := game.Init(gameData, logger)
 
@@ -192,7 +192,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 		return nil, err
 	}
 
-	game := holder.Get(gameData.ModeName)
+	game := holder.Get(gameData.GameName)
 	if game == nil {
 		return nil, errors.New("Game couldn't found with given game name")
 	}
@@ -231,7 +231,6 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 		return nil, err
 	}
 
-	//TODO: maybe we need to broadcast join data to inform clients
 	return gameData, nil
 }
 
@@ -253,7 +252,7 @@ func LeaveGame(gameID string, holder *GameHolder, session Session, pipeline *Pip
 		return nil, err
 	}
 
-	game := holder.Get(gameData.ModeName)
+	game := holder.Get(gameData.GameName)
 	if game == nil {
 		return nil, errors.New("Game couldn't found with given game name")
 	}
@@ -292,7 +291,6 @@ func LeaveGame(gameID string, holder *GameHolder, session Session, pipeline *Pip
 		return nil, err
 	}
 
-	//TODO: maybe we need to broadcast updated data to inform clients
 	return gameData, nil
 
 }
@@ -315,12 +313,11 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 		return nil, err
 	}
 
-	game := holder.Get(gameData.ModeName)
+	game := holder.Get(gameData.GameName)
 	if game == nil {
 		return nil, errors.New("Game couldn't found with given game name")
 	}
 
-	//TODO: we need to check if game exists with given game id
 	if game.GetGameSpecs().TickInterval > 0 {
 
 		queueUpdateData := &socketapi.GameUpdateQueue{

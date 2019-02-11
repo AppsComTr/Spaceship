@@ -8,7 +8,6 @@ import (
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
 	"spaceship/socketapi"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -61,15 +60,11 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 		defer mutex.Unlock()
 	}
 
-	playerCount, err := strconv.Atoi(queueProperties["player_count"])
-	if err != nil {
-		m.logger.Errorw("Error while parsing player count", "properties", queueProperties, "error", err)
-		return nil, err
-	}
+	playerCount := game.GetGameSpecs().PlayerCount
 
 	if game.GetGameSpecs().Mode == GAME_TYPE_PASSIVE_TURN_BASED {
 		var matchID string
-		err = m.redis.Do(radix.Cmd(&matchID, "LINDEX", queueKey, "0"))
+		err := m.redis.Do(radix.Cmd(&matchID, "LINDEX", queueKey, "0"))
 		if err != nil {
 			m.logger.Errorw("Redis error", "command", "LINDEX", "queueKey", queueKey, "error", err)
 			return nil, err
@@ -299,9 +294,8 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 				}
 
 				m.entries[matchID] = matchEntry
-			}else if isMember != 1 && matchEntry.ActiveCount == int32(playerCount) {
+			}else if isMember != 1 && matchEntry.ActiveCount >= int32(playerCount) {
 				m.logger.Info("Ignore user request return not found and try again")
-				//TODO ?need to check matchEntry.ActiveCount > int32(playerCount)
 				err = errors.New("not suitable for this match")
 				return nil,err
 			}

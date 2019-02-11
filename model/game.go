@@ -12,7 +12,7 @@ type GameData struct {
 	Metadata             string   `bson:"metadata"`
 	CreatedAt            int64    `bson:"created_at"`
 	UpdatedAt            int64    `bson:"updated_at"`
-	ModeName             string   `bson:"mode_name"`
+	GameName             string   `bson:"game_name"`
 	UserIDs              []string `bson:"user_ids"`
 }
 
@@ -22,7 +22,7 @@ func (gd *GameData) MapFromPB(pData *socketapi.GameData) {
 	gd.Metadata = pData.Metadata
 	gd.CreatedAt = pData.CreatedAt
 	gd.UpdatedAt = pData.UpdatedAt
-	gd.ModeName = pData.ModeName
+	gd.GameName = pData.GameName
 	gd.UserIDs = pData.UserIDs
 }
 
