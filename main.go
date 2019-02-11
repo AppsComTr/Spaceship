@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/jinzhu/configor"
 	"log"
@@ -25,6 +26,8 @@ var (
 
 func main() {
 
+	appContext, appContextCancel := context.WithCancel(context.Background())
+
 	config := &server.Config{}
 	err := configor.Load(config, "config.yml")
 	if err != nil {
@@ -42,7 +45,7 @@ func main() {
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard, notification)
 	leaderboard.SetGameHolder(gameHolder)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger, config)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger, config, appContext)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis, notification, logger)
 	matchmaker.SetPipeline(pipeline)
 
@@ -61,6 +64,7 @@ func main() {
 	<-c
 
 	logger.Info("Shutdown was started")
+	appContextCancel()
 	server.Stop()
 	logger.Info("Shutdown was completed")
 

@@ -32,10 +32,12 @@ type LocalMatchmaker struct {
 	config *Config
 	pipeline *Pipeline
 
+	context context.Context
+
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder, notification *Notification, logger *Logger, config *Config) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder, notification *Notification, logger *Logger, config *Config, context context.Context) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
@@ -44,6 +46,7 @@ func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolde
 		notification: notification,
 		logger: logger,
 		config: config,
+		context: context,
 	}
 }
 
@@ -212,7 +215,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			m.entries[matchID] = matchEntry
 
 			go func(){
-				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
+				ctx, cancel := context.WithCancel(m.context)
 
 				watchChan := Watcher(ctx, m.redis, matchID, m.logger, m.config)
 				ticker := time.NewTicker(time.Second * time.Duration(30))
@@ -417,7 +420,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 			}
 
 			go func(){
-				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
+				ctx, cancel := context.WithCancel(m.context)
 
 				watchChan := Watcher(ctx, m.redis, matchID+":joins", m.logger, m.config)
 				ticker := time.NewTicker(time.Second * time.Duration(30))
