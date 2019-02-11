@@ -326,7 +326,6 @@ func TestActiveTurnbasedGame(t *testing.T){
 					t.Fatal("Game IDs are not equal test failed", prevGameID, newGameID)
 				}
 			}
-			break
 		}
 	}
 

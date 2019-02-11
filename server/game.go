@@ -23,7 +23,7 @@ type GameSpecs struct {
 }
 
 //This should be used in matchmaker module
-func NewGame(matchID string, gameName string, holder *GameHolder, pipeline *Pipeline, session Session, logger *Logger) (*socketapi.GameData, error) {
+func NewGame(matchID string, gameName string, holder *GameHolder, pipeline *Pipeline, session Session, logger *Logger, matchmaker Matchmaker) (*socketapi.GameData, error) {
 	gameData := &socketapi.GameData{
 		Id: matchID,
 		Name: gameName,
@@ -68,7 +68,7 @@ func NewGame(matchID string, gameName string, holder *GameHolder, pipeline *Pipe
 				select {
 				case <- ticker.C:
 
-					if !loopGame(holder, gameData.Id, game, ticker, pipeline, logger){
+					if !loopGame(holder, gameData.Id, game, ticker, pipeline, logger, matchmaker){
 						return
 					}
 
@@ -82,7 +82,7 @@ func NewGame(matchID string, gameName string, holder *GameHolder, pipeline *Pipe
 	return gameData, nil
 }
 
-func loopGame(holder *GameHolder, gameID string, game GameController, ticker *time.Ticker, pipeline *Pipeline, logger *Logger) bool {
+func loopGame(holder *GameHolder, gameID string, game GameController, ticker *time.Ticker, pipeline *Pipeline, logger *Logger, matchmaker Matchmaker) bool {
 
 	rs := redsyncradix.New([]radix.Client{holder.redis})
 	mutex := rs.NewMutex("lock|" + gameID)
@@ -150,6 +150,7 @@ func loopGame(holder *GameHolder, gameID string, game GameController, ticker *ti
 		if err != nil {
 			logger.Errorw("Redis error", "command", "DEL", "key", "game-" + rGameData.Id, "error", err)
 		}
+		matchmaker.ClearMatch(rGameData.Id)
 
 		ticker.Stop()
 
@@ -295,7 +296,7 @@ func LeaveGame(gameID string, holder *GameHolder, session Session, logger *Logge
 
 }
 
-func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.GameUpdate, logger *Logger) (*socketapi.GameData, error) {
+func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateData *socketapi.GameUpdate, logger *Logger, matchmaker Matchmaker) (*socketapi.GameData, error) {
 
 	gameData := &socketapi.GameData{}
 
@@ -367,6 +368,7 @@ func UpdateGame(holder *GameHolder, session Session, pipeline *Pipeline, updateD
 			if err != nil {
 				logger.Errorw("Redis error", "command", "DEL", "key", "game-" + gameData.Id, "error", err)
 			}
+			matchmaker.ClearMatch(gameData.Id)
 
 		}else{
 

@@ -51,7 +51,7 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 			defer mutex.Unlock()
 		}
 
-		_, err := UpdateGame(p.gameHolder, session, p, message, p.logger)
+		_, err := UpdateGame(p.gameHolder, session, p, message, p.logger, p.matchmaker)
 
 		if err != nil {
 			p.logger.Errorw("Error occured while updating game state", "error", err)

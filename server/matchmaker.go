@@ -19,6 +19,7 @@ type Matchmaker interface {
 	Leave(session Session, matchID string) error
 	LeaveActiveGames(session Session) error
 	SetPipeline(pipeline *Pipeline)
+	ClearMatch(matchID string)
 }
 
 type LocalMatchmaker struct {
@@ -338,7 +339,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 	if game.GetGameSpecs().Mode == GAME_TYPE_PASSIVE_TURN_BASED {
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
-			gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger)//TODO pipeline is anti-pattern argument here
+			gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger, m)//TODO pipeline is anti-pattern argument here
 			if err != nil {
 				return nil, err
 			}
@@ -396,7 +397,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 						return nil, err
 					}
 
-					gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger)//TODO pipeline is anti-pattern argument here
+					gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger, m)//TODO pipeline is anti-pattern argument here
 					if err != nil {
 						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)
@@ -535,7 +536,7 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 				return err
 			}
 
-			delete(m.entries, matchID)
+			m.clearMatch(matchEntry.Queuekey, matchEntry.MatchId, matchEntry.Users)
 
 			if matchEntry.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || matchEntry.State == int32(socketapi.MatchEntry_GAME_CREATED) {
 				_, _ = LeaveGame(matchEntry.MatchId, m.gameHolder, session, m.logger)
@@ -608,7 +609,7 @@ func (m *LocalMatchmaker) LeaveActiveGames(session Session) error {
 				return err
 			}
 
-			delete(m.entries, matchID)
+			m.clearMatch(match.Queuekey, match.MatchId, match.Users)
 
 			if match.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || match.State == int32(socketapi.MatchEntry_GAME_CREATED) {
 				_, _ = LeaveGame(match.MatchId, m.gameHolder, session, m.logger)
@@ -665,6 +666,17 @@ func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.Match
 		session := m.sessionHolder.GetByUserID(user.UserId)
 		_ = session.Send(false, 0, message)
 	}
+}
+
+func (m *LocalMatchmaker) ClearMatch(matchID string) {
+
+	match, ok := m.entries[matchID]
+	if !ok {
+		return
+	}
+
+	m.clearMatch(match.Queuekey, matchID, match.Users)
+
 }
 
 func (m *LocalMatchmaker) clearMatch(queueKey string, matchID string, users []*socketapi.MatchEntry_MatchUser){
