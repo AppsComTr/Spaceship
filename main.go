@@ -44,6 +44,7 @@ func main() {
 	leaderboard.SetGameHolder(gameHolder)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger, config)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis, notification, logger)
+	matchmaker.SetPipeline(pipeline)
 
 	sessionHolder.SetLeaveListener(matchmaker.LeaveActiveGames)
 

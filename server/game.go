@@ -234,15 +234,15 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 	return gameData, nil
 }
 
-func LeaveGame(gameID string, holder *GameHolder, session Session, pipeline *Pipeline, logger *Logger) (*socketapi.GameData, error) {
+func LeaveGame(gameID string, holder *GameHolder, session Session, logger *Logger) (*socketapi.GameData, error) {
 
 	gameData := &socketapi.GameData{}
 
 	var gameDataS string
 
-	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", gameID))
+	err := holder.redis.Do(radix.Cmd(&gameDataS, "GET", "game-" + gameID))
 	if err != nil {
-		logger.Errorw("Redis error", "command", "GET", "key", gameID, "error", err)
+		logger.Errorw("Redis error", "command", "GET", "key", "game-" + gameID, "error", err)
 		return nil, err
 	}
 
@@ -285,9 +285,9 @@ func LeaveGame(gameID string, holder *GameHolder, session Session, pipeline *Pip
 		return nil, err
 	}
 
-	err = holder.redis.Do(radix.Cmd(nil, "SET", gameData.Id, gameDataS))
+	err = holder.redis.Do(radix.Cmd(nil, "SET", "game-" + gameData.Id, gameDataS))
 	if err != nil {
-		logger.Errorw("Redis error", "command", "SET", "key", gameData.Id, "val", gameDataS, "error", err)
+		logger.Errorw("Redis error", "command", "SET", "key", "game-" + gameData.Id, "val", gameDataS, "error", err)
 		return nil, err
 	}
 

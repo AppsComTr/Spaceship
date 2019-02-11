@@ -17,7 +17,8 @@ type Matchmaker interface {
 	Find(session Session,gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error)
 	Join(pipeline *Pipeline, session Session, matchID string) (*socketapi.GameData, error)
 	Leave(session Session, matchID string) error
-	LeaveActiveGames(userID string) error
+	LeaveActiveGames(session Session) error
+	SetPipeline(pipeline *Pipeline)
 }
 
 type LocalMatchmaker struct {
@@ -28,6 +29,7 @@ type LocalMatchmaker struct {
 	notification *Notification
 	logger *Logger
 	config *Config
+	pipeline *Pipeline
 
 	entries map[string]*socketapi.MatchEntry
 }
@@ -42,6 +44,10 @@ func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolde
 		logger: logger,
 		config: config,
 	}
+}
+
+func (m *LocalMatchmaker) SetPipeline(pipeline *Pipeline){
+	m.pipeline = pipeline
 }
 
 func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error){
@@ -324,8 +330,8 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 		return nil, errors.New("matchID not found!")
 	}
 
-	game, ok := m.gameHolder.games[matchEntry.GameName]
-	if !ok {
+	game := m.gameHolder.Get(matchEntry.GameName)
+	if game == nil {
 		return nil, errors.New("can't find game for this request")
 	}
 
@@ -491,8 +497,8 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 	if !ok {
 		return errors.New("can't find match for this request")
 	}
-	game, ok := m.gameHolder.games[matchEntry.GameName]
-	if !ok {
+	game := m.gameHolder.Get(matchEntry.GameName)
+	if game == nil {
 		return errors.New("can't find game for this request")
 	}
 
@@ -530,7 +536,11 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 			}
 
 			delete(m.entries, matchID)
-			//TODO notify game.leave
+
+			if matchEntry.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || matchEntry.State == int32(socketapi.MatchEntry_GAME_CREATED) {
+				_, _ = LeaveGame(matchEntry.MatchId, m.gameHolder, session, m.logger)
+			}
+
 		}else{
 			err := m.redis.Do(radix.Cmd(nil, "SREM", redisKey, matchID))
 			if err != nil {
@@ -550,8 +560,11 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 			matchEntry.Users = users
 			m.entries[matchID] = matchEntry
 
-			//TODO notify !!opponent players if any
-			//TODO notify game.leave
+			if matchEntry.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || matchEntry.State == int32(socketapi.MatchEntry_GAME_CREATED) {
+				gameData, _ := LeaveGame(matchEntry.MatchId, m.gameHolder, session, m.logger)
+				m.pipeline.broadcastGame(gameData)
+			}
+
 		}
 	}else{
 		return  errors.New("match can not found")
@@ -560,11 +573,11 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 	return nil
 }
 
-func (m *LocalMatchmaker) LeaveActiveGames(userID string) error {
+func (m *LocalMatchmaker) LeaveActiveGames(session Session) error {
 	m.Lock()
 	defer m.Unlock()
 
-	redisKey := "pam:"+userID
+	redisKey := "pam:"+session.UserID()
 
 	var pams []string
 	err := m.redis.Do(radix.Cmd(&pams, "SMEMBERS", redisKey))
@@ -577,7 +590,7 @@ func (m *LocalMatchmaker) LeaveActiveGames(userID string) error {
 		match := m.entries[matchID]
 		var userIndex int
 		for i,user := range match.Users {
-			if user.UserId == userID {
+			if user.UserId == session.UserID() {
 				userIndex = i
 				break
 			}
@@ -596,24 +609,29 @@ func (m *LocalMatchmaker) LeaveActiveGames(userID string) error {
 			}
 
 			delete(m.entries, matchID)
-			//TODO notify game.leave
+
+			if match.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || match.State == int32(socketapi.MatchEntry_GAME_CREATED) {
+				_, _ = LeaveGame(match.MatchId, m.gameHolder, session, m.logger)
+			}
 		}else{
 			err = m.redis.Do(radix.Cmd(nil, "SREM", redisKey, matchID))
 			if err != nil {
 				m.logger.Errorw("Redis error", "command", "SREM", "key", redisKey, "matchID", matchID, "error", err)
 				return err
 			}
-			err = m.redis.Do(radix.Cmd(nil, "SREM", matchID, userID))
+			err = m.redis.Do(radix.Cmd(nil, "SREM", matchID, session.UserID()))
 			if err != nil {
-				m.logger.Errorw("Redis error", "command", "SREM", "key", matchID, "userID", userID, "error", err)
+				m.logger.Errorw("Redis error", "command", "SREM", "key", matchID, "userID", session.UserID(), "error", err)
 				return err
 			}
 
 			match.Users = append(match.Users[:userIndex], match.Users[userIndex+1:]...)
 			m.entries[matchID] = match
 
-			//TODO notify !!opponent players if any
-			//TODO notify game.leave
+			if match.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || match.State == int32(socketapi.MatchEntry_GAME_CREATED) {
+				gameData, _ := LeaveGame(match.MatchId, m.gameHolder, session, m.logger)
+				m.pipeline.broadcastGame(gameData)
+			}
 		}
 	}
 	return nil
@@ -649,34 +667,61 @@ func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.Match
 	}
 }
 
-//TODO Muting errors inside method maybe bad idea
 func (m *LocalMatchmaker) clearMatch(queueKey string, matchID string, users []*socketapi.MatchEntry_MatchUser){
 
-	err := m.redis.Do(radix.Cmd(nil, "LREM", queueKey, "0", matchID))
-	if err != nil {
-		m.logger.Errorw("Redis error", "command", "LREM", "key", queueKey, "matchID", matchID, "error", err)
-	}
+	err := m.redis.Do(radix.WithConn("", func(conn radix.Conn) error {
 
-	err = m.redis.Do(radix.Cmd(nil, "DEL", matchID))
-	if err != nil {
-		m.logger.Errorw("Redis error", "command", "DEL", "key", matchID, "error", err)
-	}
-
-	err = m.redis.Do(radix.Cmd(nil, "DEL", matchID+":joins"))
-	if err != nil {
-		m.logger.Errorw("Redis error", "command", "DEL", "key", matchID+":joins", "error", err)
-	}
-
-	//TODO redis multi
-	for _,user := range users {
-		err = m.redis.Do(radix.Cmd(nil, "SREM", "pm:"+user.UserId, matchID))
-		if err != nil {
-			m.logger.Errorw("Redis error", "command", "SREM", "key", "pm:"+user.UserId, "matchID", matchID, "error", err)
+		if err := conn.Do(radix.Cmd(nil, "MULTI")); err != nil {
+			return err
 		}
-		err = m.redis.Do(radix.Cmd(nil, "SREM", "pam:"+user.UserId, matchID))
-		if err != nil {
-			m.logger.Errorw("Redis error", "command", "SREM", "key", "pam:"+user.UserId, "matchID", matchID, "error", err)
+
+		var err error
+		defer func(){
+			if err != nil {
+				_ = conn.Do(radix.Cmd(nil, "DISCARD"))
+			}
+		}()
+
+		if err = conn.Do(radix.Cmd(nil, "LREM", queueKey, "0", matchID)); err != nil {
+			m.logger.Errorw("Redis error", "command", "LREM", "key", queueKey, "matchID", matchID, "error", err)
+			return err
 		}
+
+		if err = conn.Do(radix.Cmd(nil, "DEL", matchID)); err != nil {
+			m.logger.Errorw("Redis error", "command", "DEL", "key", matchID, "error", err)
+			return err
+		}
+
+		if err = conn.Do(radix.Cmd(nil, "DEL", matchID+":joins")); err != nil {
+			m.logger.Errorw("Redis error", "command", "DEL", "key", matchID+":joins", "error", err)
+			return err
+		}
+
+		for _,user := range users {
+
+			if err = conn.Do(radix.Cmd(nil, "SREM", "pm:"+user.UserId, matchID)); err != nil {
+				m.logger.Errorw("Redis error", "command", "SREM", "key", "pm:"+user.UserId, "matchID", matchID, "error", err)
+				return err
+			}
+
+			if err = conn.Do(radix.Cmd(nil, "SREM", "pam:"+user.UserId, matchID)); err != nil {
+				m.logger.Errorw("Redis error", "command", "SREM", "key", "pam:"+user.UserId, "matchID", matchID, "error", err)
+				return err
+			}
+
+		}
+
+		if err = conn.Do(radix.Cmd(nil, "EXEC")); err != nil {
+			m.logger.Errorw("Redis error", "command", "EXEC", "error", err)
+			return err
+		}
+
+		return nil
+	}))
+
+	if err != nil {
+		m.logger.Errorw("Error while executing commands in WitchConn helper", "error", err)
+		return
 	}
 
 	delete(m.entries, matchID)
