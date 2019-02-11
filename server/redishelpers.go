@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Watcher(ctx context.Context, redis radix.Client, key string, logger *Logger) <- chan int {
+func Watcher(ctx context.Context, redis radix.Client, key string, logger *Logger, config *Config) <- chan int {
 	watchChan := make(chan int)
 
 	go func(){
@@ -27,7 +27,7 @@ func Watcher(ctx context.Context, redis radix.Client, key string, logger *Logger
 					break
 				}
 				watchChan <- result
-				time.Sleep(2 * time.Second)//TODO must be config
+				time.Sleep(time.Duration(config.RedisConfig.WatcherIntervalMS) * time.Millisecond)
 			}
 		}
 	}()

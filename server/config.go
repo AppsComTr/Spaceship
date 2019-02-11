@@ -14,6 +14,7 @@ type Config struct {
 	RedisConfig struct{
 		ConnString string `default:"redis"`
 		CluesterEnabled bool `default:"false"`
+		WatcherIntervalMS int64 `default:"2000"`
 	}
 	AuthConfig struct{
 		JWTSecret string `default:"asdasdqweqasdqwwe"`

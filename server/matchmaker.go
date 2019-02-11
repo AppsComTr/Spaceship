@@ -28,11 +28,12 @@ type LocalMatchmaker struct {
 	sessionHolder *SessionHolder
 	notification *Notification
 	logger *Logger
+	config *Config
 
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder, notification *Notification, logger *Logger) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder, notification *Notification, logger *Logger, config *Config) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
@@ -40,13 +41,13 @@ func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolde
 		sessionHolder: sessionHolder,
 		notification: notification,
 		logger: logger,
+		config: config,
 	}
 }
 
 func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error){
-	//TODO: we can validate if game controller exists with given gameName to eliminate unnecessarry lock operations
-	game, ok := m.gameHolder.games[gameName]
-	if !ok {
+	game := m.gameHolder.Get(gameName)
+	if game == nil {
 		return nil, errors.New("can't find game for this request")
 	}
 
@@ -211,7 +212,7 @@ func (m *LocalMatchmaker) Find(session Session, gameName string, queueProperties
 			go func(){
 				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
 
-				watchChan := Watcher(ctx, m.redis, matchID, m.logger)
+				watchChan := Watcher(ctx, m.redis, matchID, m.logger, m.config)
 				ticker := time.NewTicker(time.Second * time.Duration(30))
 				latestPlayerCount := -1
 				var ok bool
@@ -417,7 +418,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 			go func(){
 				ctx, cancel := context.WithCancel(context.Background())//TODO improve this, antipattern open-match/apiserv.go#CreateMatch
 
-				watchChan := Watcher(ctx, m.redis, matchID+":joins", m.logger)
+				watchChan := Watcher(ctx, m.redis, matchID+":joins", m.logger, m.config)
 				ticker := time.NewTicker(time.Second * time.Duration(30))
 				latestPlayerCount := -1
 				var ok bool
