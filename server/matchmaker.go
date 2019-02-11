@@ -339,7 +339,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 	if game.GetGameSpecs().Mode == GAME_TYPE_PASSIVE_TURN_BASED {
 		switch matchEntry.State {
 		case int32(socketapi.MatchEntry_MATCH_FINDING_PLAYERS):
-			gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger, m)//TODO pipeline is anti-pattern argument here
+			gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger, m)
 			if err != nil {
 				return nil, err
 			}
@@ -397,7 +397,7 @@ func (m *LocalMatchmaker) Join(pipeline *Pipeline, session Session, matchID stri
 						return nil, err
 					}
 
-					gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger, m)//TODO pipeline is anti-pattern argument here
+					gameData, err = NewGame(matchID, matchEntry.GameName, m.gameHolder, pipeline, session, m.logger, m)
 					if err != nil {
 						m.broadcastMatch(session, nil, "", err, int32(socketapi.MatchError_MATCH_INTERNAL_ERROR))
 						m.clearMatch(matchEntry.Queuekey, matchID, matchEntry.Users)

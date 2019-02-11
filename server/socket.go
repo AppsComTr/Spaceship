@@ -20,6 +20,11 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder 
 
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		format := r.URL.Query().Get("format")
+		if format != "proto" {
+			format = "json"
+		}
+
 		//Connections which are made for this endpoint, will be upgraded to websocket connection if token is valid
 		token := r.URL.Query().Get("token")
 		if token == "" {
@@ -58,7 +63,7 @@ func NewSocketAcceptor(sessionHolder *SessionHolder, config *Config, gameHolder 
 			return
 		}
 
-		s := NewSession(userID, username, expiry, clientIP, clientPort, conn, config, sessionHolder, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, stats, logger)
+		s := NewSession(userID, username, expiry, clientIP, clientPort, format, conn, config, sessionHolder, gameHolder, jsonProtoMarshler, jsonProtoUnmarshler, stats, logger)
 
 		logger.Infow("New socket connection was established", "id", s.ID().String())
 

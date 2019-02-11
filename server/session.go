@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
@@ -21,6 +22,8 @@ type session struct {
 	expiry     int64
 	clientIP   string
 	clientPort string
+
+	format string
 
 	pingPeriodTime time.Duration
 	pongWaitTime time.Duration
@@ -45,7 +48,7 @@ type session struct {
 	closed bool
 }
 
-func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, conn *websocket.Conn, config *Config, sessionHolder *SessionHolder, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, stats *Stats, logger *Logger) Session {
+func NewSession(userID string, username string, expiry int64, clientIP string, clientPort string, format string, conn *websocket.Conn, config *Config, sessionHolder *SessionHolder, gameHolder *GameHolder, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, stats *Stats, logger *Logger) Session {
 
 	sessionID := uuid.Must(uuid.NewV4(), nil)
 
@@ -58,6 +61,8 @@ func NewSession(userID string, username string, expiry int64, clientIP string, c
 		expiry: expiry,
 		clientIP: clientIP,
 		clientPort: clientPort,
+
+		format: format,
 
 		pingPeriodTime: time.Duration(config.SocketConfig.PingPeriodTime) * time.Millisecond,
 		pongWaitTime: time.Duration(config.SocketConfig.PongWaitTime) * time.Millisecond,
@@ -160,8 +165,11 @@ func (s *session) Consume(handlerFunc func(session Session, envelope *socketapi.
 
 		request := &socketapi.Envelope{}
 
-		//TODO: we can also handle proto messages
-		err = s.jsonProtoUnmarshler.Unmarshal(bytes.NewReader(data), request)
+		if s.format == "proto" {
+			err = proto.Unmarshal(data, request)
+		}else{
+			err = s.jsonProtoUnmarshler.Unmarshal(bytes.NewReader(data), request)
+		}
 
 		if err != nil {
 			s.logger.Errorw("Read message error", "error", err)
@@ -265,9 +273,12 @@ func (s *session) Send(isStream bool, mode uint8, envelope *socketapi.Envelope) 
 	var payload []byte
 	var err error
 	var buf bytes.Buffer
-	//TODO: sessions will support proto and json. it should be handled in here too
-	if err = s.jsonProtoMarshler.Marshal(&buf, envelope); err == nil {
-		payload = buf.Bytes()
+	if s.format == "proto" {
+		payload, err = proto.Marshal(envelope)
+	}else{
+		if err = s.jsonProtoMarshler.Marshal(&buf, envelope); err == nil {
+			payload = buf.Bytes()
+		}
 	}
 	if err != nil {
 		s.logger.Errorw("Could not marshal envelope", "envelope", envelope, "error", err)
