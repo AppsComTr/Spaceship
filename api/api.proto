@@ -78,8 +78,9 @@ message Leaderboard {
 
 message LeaderboardRequest {
     string type = 1;
-    string mode = 2;
+    string game_name = 2;
     string page = 3;
+    string user_id = 4;
 }
 
 message LeaderboardResponse {

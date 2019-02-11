@@ -106,9 +106,12 @@ service SpaceShip {
 
     rpc GetLeaderboard(LeaderboardRequest) returns (api.LeaderboardResponse) {
         option (google.api.http) = {
-            get: "/v1/leaderboard/{type}/mode/{mode}"
+            get: "/v1/leaderboard/{type}/game/{game_name}"
             additional_bindings {
-                get: "/v1/leaderboard/{type}/mode/{mode}/page/{page}"
+                get: "/v1/leaderboard/{type}/game/{game_name}/page/{page}"
+            }
+            additional_bindings {
+                get: "/v1/leaderboard/{type}/game/{game_name}/user/{user_id}"
             }
         };
     }

@@ -7,6 +7,7 @@ import (
 	"spaceship/api"
 	"spaceship/model"
 	"strconv"
+	"strings"
 )
 
 func (as *Server) GetLeaderboard(context context.Context, request *api.LeaderboardRequest) (*api.LeaderboardResponse, error) {
@@ -14,9 +15,32 @@ func (as *Server) GetLeaderboard(context context.Context, request *api.Leaderboa
 	page := 0
 	itemPerPage := 20
 
-	reqPage, err := strconv.Atoi(request.Page)
-	if err == nil {
-		page = reqPage
+	reqUserID := strings.TrimSpace(request.UserId)
+	if reqUserID != "" {
+
+		if !bson.IsObjectIdHex(reqUserID) {
+			return nil, status.Error(400, "Requested user id is not valid.")
+		}
+
+		userRank := as.leaderboard.GetUserRank(request.Type, request.GameName, reqUserID)
+
+		if userRank == 0 {
+			return nil, status.Error(404, "User score couldn't found with given parameters")
+		}
+
+		page = userRank / itemPerPage
+
+		if userRank % itemPerPage == 0 {
+			page--
+		}
+
+	}else{
+
+		reqPage, err := strconv.Atoi(request.Page)
+		if err == nil {
+			page = reqPage
+		}
+
 	}
 
 	response := &api.LeaderboardResponse{
@@ -24,7 +48,7 @@ func (as *Server) GetLeaderboard(context context.Context, request *api.Leaderboa
 		HasNextPage: true,
 	}
 
-	scores, err := as.leaderboard.GetScores(request.Type, request.Mode, page, itemPerPage)
+	scores, err := as.leaderboard.GetScores(request.Type, request.GameName, page, itemPerPage)
 	if err != nil {
 		return nil, status.Error(500, err.Error())
 	}
