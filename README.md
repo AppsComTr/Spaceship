@@ -140,7 +140,7 @@ type GameController interface {
 	
 	`TickInterval` is optional. If designed game is a real time game, should contains a valid value in ms format. This is used to define interval between running of game loops. 
 	
-There you can see an example very basic real time game. This game is designed for two player. Players can attack the boss concurrently. When the boss monster is killed, the final kick is won and the game is finished.
+There you can see an example very basic real time game. This game is designed for two player. Players can attack the boss concurrently. When the boss monster is killed, the last hit wins and the game is finished.
 
 ```go
 type RTGame struct {}
@@ -200,7 +200,6 @@ func (tg *RTGame) Leave(gameData *socketapi.GameData, session server.Session, lo
 	return nil
 }
 
-//Users should create their own metadata format. Ex: json string
 func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) (bool, error) {
 	return false, nil
 }
