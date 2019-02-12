@@ -1,8 +1,8 @@
-#Spaceship
+## Spaceship
 
 > Multiplayer game backend framework
 
-#Features
+## Features
 
 - Authentication support with fingerprint and Facebook account
 - Built-in friendship mechanism
@@ -11,9 +11,10 @@
 - Matchmaker with customizable parameters for all game types
 - Simple metrics which is collected with OpenCensus
 
-You can build your own game server with just working on logic of the game. We don't support vertical scaling for now.
+Spaceship is a online game backend framework designed to allow game creators to build their own game's server side without the hassle of the common parts of every multiplayer games.
+You can build your own game server with just working on logic of the game. We don't support distributed systems for now.
 
-##Getting started
+## Getting started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing.
 
@@ -57,6 +58,13 @@ These tests simulates clients for designed games. If you start up Spaceship corr
 
 As can be seen in the feature screen, developers should only focus on developing their own game logic. 
 Spaceship handles all other things for them. Spaceship allows defining multiple games.
+
+First of all, Spaceship supports 3 types of games. These are; real time, active turn-based and passive turn-based. 
+Real time games works with looper mechanism on server side. Data is not directly processed, they are queued to handled in loop method with interval which can be defined in config.
+For the other types, datas are not queued and processed in update method when they are arrived to server.
+Matchmaker works different for passive turn-based games according to others. Because others are considered as active games and they should be start after complete the user count for given game.
+Because of these, `Mode` field in game specs should be defined carefully according to designed game.
+
 To attach a game to Spaceship, developers should implement the `GameController` methods. These are:
 
 ```go
@@ -92,6 +100,20 @@ type GameController interface {
 - `Leave(gameData *socketapi.GameData, session Session, logger *Logger) error` method:
 
 	When users disconnect from the server or leave the game willingly, this method is called by Spaceship. According to game logic, developers can perform the necessary operations.
+
+- `Update(gameData *socketapi.GameData, session Session, metadata string, leaderboard *Leaderboard, notification *Notification, logger *Logger) (bool, error)` method:
+
+	This method is triggered by Spaceship when clients send data about the game if game mode is turn-based. This can be leaved empty for real time games. For example; if you design turn-based puzzle game, users data should be sent to the server by the client. When Spaceship receive this data, triggers relevant game controllers update method. In this way, any logic for designed game can be executed.
+	
+	`metadata` contains data which is sent by the client. Developers should build their own game data structs and use any serialization methods that they want. Spaceship only accepts strings for metadata. For example; client send data after serialize game data to json string and can unmarshal it in update method.
+	
+	Leaderboard module is also passed to this method. So, developers can update user scores according to their game play datas.
+	
+	Also developers should decide if game is finished or not in this method and if game is completed, should return true. So Spaceship can understand that this game is completed and write this game's data to db to make it persistent.
+	
+- `Loop(gameData *socketapi.GameData, queuedDatas []socketapi.GameUpdateQueue, leaderboard *Leaderboard, notification *Notification, logger *Logger) bool` method:
+
+	As stated above, this method is repeatedly triggered by Spaceship only when the game mode is real time with given interval. Metadata that comes from clients is passed to this method as array with keeping the arriving order.
 	
 - `GetGameSpecs()` method:
 
@@ -107,7 +129,7 @@ type GameController interface {
 	
 	`PlayerCount` is used by match maker module. This field should contains the number of maximum player count for this game.
 	
-	`Mode` defines the type of this game. We support 3 game types. These are real time, active turn based and passive turn based. This fields value should be one of the predefined constants in Spaceship.
+	`Mode` defines the type of this game. As stated above, Spaceship supports 3 game types. These are real time, active turn based and passive turn based. This fields value should be one of the predefined constants in Spaceship. This should be selected carefully according to designed game.
 	```go
 	const (
     	GAME_TYPE_PASSIVE_TURN_BASED int = iota
@@ -117,3 +139,150 @@ type GameController interface {
 	```
 	
 	`TickInterval` is optional. If designed game is a real time game, should contains a valid value in ms format. This is used to define interval between running of game loops. 
+	
+There you can see an example very basic real time game. This game is designed for two player. Players can attack the boss concurrently. When the boss monster is killed, the final kick is won and the game is finished.
+
+```go
+type RTGame struct {}
+
+var rtGameSpecs = server.GameSpecs{
+	PlayerCount: 2,
+	Mode: server.GAME_TYPE_REAL_TIME,
+	TickInterval: 1000,
+}
+
+const (
+	RT_GAME_STATE_CONTINUE = iota
+	RT_GAME_STATE_FINISHED
+)
+
+type RTGameUpdateData struct {
+	Damage int
+}
+
+//Dummy struct for this example game
+type RTGameData struct {
+	GameState int
+	BossHealth int
+	WinnerUserID *string
+}
+
+func (tg *RTGame) GetName() string {
+	//These value should be unique for each games
+	return "realtimeTestGame"
+}
+
+func (tg *RTGame) Init(gameData *socketapi.GameData, logger *server.Logger) error {
+
+	rtGameData := RTGameData{
+		GameState: RT_GAME_STATE_CONTINUE,
+		BossHealth: 300,
+	}
+
+	data, err := json.Marshal(rtGameData)
+	if err != nil {
+		return err
+	}
+
+	gameData.Metadata = string(data)
+
+	return nil
+}
+
+func (tg *RTGame) Join(gameData *socketapi.GameData, session server.Session, notification *server.Notification, logger *server.Logger) error {
+
+	return nil
+
+}
+
+func (tg *RTGame) Leave(gameData *socketapi.GameData, session server.Session, logger *server.Logger) error {
+
+	return nil
+}
+
+//Users should create their own metadata format. Ex: json string
+func (tg *RTGame) Update(gameData *socketapi.GameData, session server.Session, metadata string, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) (bool, error) {
+	return false, nil
+}
+
+func (tg *RTGame) Loop(gameData *socketapi.GameData, queuedDatas []socketapi.GameUpdateQueue, leaderboard *server.Leaderboard, notification *server.Notification, logger *server.Logger) bool {
+
+	var rtGameData RTGameData
+	err := json.Unmarshal([]byte(gameData.Metadata), &rtGameData)
+	if err != nil {
+		logger.Error(err)
+		return true
+	}
+
+	isFinished := false
+	for _, queueItem := range queuedDatas {
+
+		var updateData RTGameUpdateData
+		err = json.Unmarshal([]byte(queueItem.Metadata), &updateData)
+		if err != nil {
+			logger.Error(err)
+			return true
+		}
+
+		rtGameData.BossHealth -= updateData.Damage
+
+		if rtGameData.BossHealth <= 0 {
+			rtGameData.BossHealth = 0
+			rtGameData.GameState = RT_GAME_STATE_FINISHED
+			rtGameData.WinnerUserID = &queueItem.UserID
+			isFinished = true
+		}
+
+	}
+
+	rtGameDataS, err := json.Marshal(rtGameData)
+	if err != nil {
+		return true
+	}
+	gameData.Metadata = string(rtGameDataS)
+
+	return isFinished
+
+}
+
+func (tg RTGame) GetGameSpecs() server.GameSpecs {
+	return rtGameSpecs
+}
+```
+	
+## Technical documentation
+
+This simple documentation part was prepared for who wants to contribute Spaceship.
+
+While developing Spaceship, we were inspired from [Nakama](https://github.com/heroiclabs/nakama) and [Open Match](https://github.com/GoogleCloudPlatform/open-match). You can also check these projects too.
+
+Spaceship is using rpc technology to serve their endpoints by using [gRPC](https://grpc.ip) framework. It also supports http requests with using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway).
+Spaceship allows clients to make request with gzip compressed body over the http.
+Also, it supports both json and proto messages over the socket connection. 
+As spaceship uses gRPC, [Protocol Buffers](https://github.com/protocolbuffers/protobuf) is used to model messages and services. If you want to add a new service or modify existing one, you should regenerate codes with described in [Installing](#installing) section.
+
+Every single logic part is designed as a module in Spaceship. There are 8 main module in Spaceship. These are:
+
+- Notification
+- Leaderboard
+- Stats
+- Session holder
+- Game holder 
+- Matchmaker
+- Pipeline
+- Server
+
+As you can understand from their names, they only responsible for their own jobs. Modules are initialized with other modules if necessary. 
+
+To start up server, these all modules should be created and after that, server's `StartServer` method should be called with passing all of these modules.
+In this method, gRPC and grpc-gateway servers are configured. Additional and necessary endpoints are defined on a router to accept web socket connections and serving metrics for [Prometheus](https://prometheus.io) over an endpoint.
+Also one more endpoint is defined on this router to serve static files. For now Spaceship does not support cloud storage.
+
+All other services are defined on the gRPC server instance. They could be found in `api_account.go` and `api_leaderboard.go` files under the server package. 
+
+To accept socket connections, `NewSocketAcceptor` method is used on the router. When a client wants to open a new socket connection, this method is called and it returns an http handler.
+This handler first checks if given token is valid, if it is valid, tries to upgrade the http connection to web socket connection and creates and `Session`.
+Sessions unique for every user. It holds users active connection, informations, connection states etc... It handles incoming and outgoing messages over the socket connection first with `Consume` and `processOutgoing` methods.
+
+Incoming messages over the socket connection are passed to **pipeline** module. This module is responsible of redirecting message to correct place and returning their responses - if exists - to clients. Game data is broadcast over this module.
+For example, when a client sends a match find message, it redirects this message to **matchmaker** module.
