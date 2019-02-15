@@ -667,7 +667,10 @@ func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.Match
 	message := &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchEntry{MatchEntry: match}}
 	for _, user := range match.Users {
 		session := m.sessionHolder.GetByUserID(user.UserId)
-		_ = session.Send(false, 0, message)
+		//TODO while finding match if host user closes session throws npe. For now fixed with nil check
+		if session != nil {
+			_ = session.Send(false, 0, message)
+		}
 	}
 }
 
