@@ -17,7 +17,7 @@ type Matchmaker interface {
 	Find(session Session,gameName string, queueProperties map[string]string) (*socketapi.MatchEntry, error)
 	Join(pipeline *Pipeline, session Session, matchID string) (*socketapi.GameData, error)
 	Leave(session Session, matchID string) error
-	LeaveActiveGames(session Session) error
+	LeaveActiveGames(userID string) error
 	SetPipeline(pipeline *Pipeline)
 	ClearMatch(matchID string)
 }
@@ -542,7 +542,7 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 			m.clearMatch(matchEntry.Queuekey, matchEntry.MatchId, matchEntry.Users)
 
 			if matchEntry.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || matchEntry.State == int32(socketapi.MatchEntry_GAME_CREATED) {
-				_, _ = LeaveGame(matchEntry.MatchId, m.gameHolder, session, m.logger)
+				_, _ = LeaveGame(matchEntry.MatchId, m.gameHolder, session.UserID(), m.logger)
 			}
 
 		}else{
@@ -565,7 +565,7 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 			m.entries[matchID] = matchEntry
 
 			if matchEntry.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || matchEntry.State == int32(socketapi.MatchEntry_GAME_CREATED) {
-				gameData, _ := LeaveGame(matchEntry.MatchId, m.gameHolder, session, m.logger)
+				gameData, _ := LeaveGame(matchEntry.MatchId, m.gameHolder, session.UserID(), m.logger)
 				m.pipeline.broadcastGame(gameData)
 			}
 
@@ -577,11 +577,11 @@ func (m *LocalMatchmaker) Leave(session Session, matchID string) error{
 	return nil
 }
 
-func (m *LocalMatchmaker) LeaveActiveGames(session Session) error {
+func (m *LocalMatchmaker) LeaveActiveGames(userID string) error {
 	m.Lock()
 	defer m.Unlock()
 
-	redisKey := "pam:"+session.UserID()
+	redisKey := "pam:"+userID
 
 	var pams []string
 	err := m.redis.Do(radix.Cmd(&pams, "SMEMBERS", redisKey))
@@ -594,7 +594,7 @@ func (m *LocalMatchmaker) LeaveActiveGames(session Session) error {
 		match := m.entries[matchID]
 		var userIndex int
 		for i,user := range match.Users {
-			if user.UserId == session.UserID() {
+			if user.UserId == userID {
 				userIndex = i
 				break
 			}
@@ -615,7 +615,7 @@ func (m *LocalMatchmaker) LeaveActiveGames(session Session) error {
 			m.clearMatch(match.Queuekey, match.MatchId, match.Users)
 
 			if match.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || match.State == int32(socketapi.MatchEntry_GAME_CREATED) {
-				_, _ = LeaveGame(match.MatchId, m.gameHolder, session, m.logger)
+				_, _ = LeaveGame(match.MatchId, m.gameHolder, userID, m.logger)
 			}
 		}else{
 			err = m.redis.Do(radix.Cmd(nil, "SREM", redisKey, matchID))
@@ -623,9 +623,9 @@ func (m *LocalMatchmaker) LeaveActiveGames(session Session) error {
 				m.logger.Errorw("Redis error", "command", "SREM", "key", redisKey, "matchID", matchID, "error", err)
 				return err
 			}
-			err = m.redis.Do(radix.Cmd(nil, "SREM", matchID, session.UserID()))
+			err = m.redis.Do(radix.Cmd(nil, "SREM", matchID, userID))
 			if err != nil {
-				m.logger.Errorw("Redis error", "command", "SREM", "key", matchID, "userID", session.UserID(), "error", err)
+				m.logger.Errorw("Redis error", "command", "SREM", "key", matchID, "userID", userID, "error", err)
 				return err
 			}
 
@@ -633,7 +633,7 @@ func (m *LocalMatchmaker) LeaveActiveGames(session Session) error {
 			m.entries[matchID] = match
 
 			if match.State == int32(socketapi.MatchEntry_MATCH_JOINING_PLAYERS) || match.State == int32(socketapi.MatchEntry_GAME_CREATED) {
-				gameData, _ := LeaveGame(match.MatchId, m.gameHolder, session, m.logger)
+				gameData, _ := LeaveGame(match.MatchId, m.gameHolder, userID, m.logger)
 				m.pipeline.broadcastGame(gameData)
 			}
 		}

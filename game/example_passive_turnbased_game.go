@@ -92,7 +92,7 @@ func (tg *ExampleGame) Join(gameData *socketapi.GameData, session server.Session
 	return nil
 }
 
-func (tg *ExampleGame) Leave(gameData *socketapi.GameData, session server.Session, logger *server.Logger) error {
+func (tg *ExampleGame) Leave(gameData *socketapi.GameData, userID string, logger *server.Logger) error {
 
 	return nil
 }

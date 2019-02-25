@@ -235,7 +235,7 @@ func JoinGame(gameID string, holder *GameHolder, session Session, logger *Logger
 	return gameData, nil
 }
 
-func LeaveGame(gameID string, holder *GameHolder, session Session, logger *Logger) (*socketapi.GameData, error) {
+func LeaveGame(gameID string, holder *GameHolder, userID string, logger *Logger) (*socketapi.GameData, error) {
 
 	gameData := &socketapi.GameData{}
 
@@ -259,8 +259,8 @@ func LeaveGame(gameID string, holder *GameHolder, session Session, logger *Logge
 	}
 
 	userIndex := -1
-	for i, userID := range gameData.UserIDs {
-		if userID == session.UserID() {
+	for i, uID := range gameData.UserIDs {
+		if uID == userID {
 			userIndex = i
 			break
 		}
@@ -272,7 +272,7 @@ func LeaveGame(gameID string, holder *GameHolder, session Session, logger *Logge
 
 	gameData.UserIDs = append(gameData.UserIDs[:userIndex], gameData.UserIDs[userIndex+1:]...)
 
-	err = game.Leave(gameData, session, logger)
+	err = game.Leave(gameData, userID, logger)
 	if err != nil {
 		logger.Errorw("Error in game controllers leave method", "error", err)
 		return nil, err
