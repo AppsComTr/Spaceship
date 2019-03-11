@@ -175,6 +175,11 @@ func StartServer(sessionHolder *SessionHolder, gameHolder *GameHolder, config *C
 		}
 	}()
 
+	//TODO: we can subscribe to rabbitMQ queue here. We'll listen the queue, and according to retrieved data we'll check if user ids are in our session holder
+	//TODO: if we'll find sessions we'll send data to this sessions
+	//TODO: we can also make a module for this purpose with sending session holder module to it.
+	//TODO: we also need to change session.Send method at everywhere that we used with new module's send method.
+
 	return s
 
 }
