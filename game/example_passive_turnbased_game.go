@@ -42,7 +42,7 @@ type EXGameData struct {
 
 func (tg *ExampleGame) GetName() string {
 	//These value should be unique for each games
-	return "exampleATGame"
+	return "examplePTGame"
 }
 
 func (tg *ExampleGame) Init(gameData *socketapi.GameData, logger *server.Logger) error {
@@ -92,7 +92,7 @@ func (tg *ExampleGame) Join(gameData *socketapi.GameData, session server.Session
 	return nil
 }
 
-func (tg *ExampleGame) Leave(gameData *socketapi.GameData, session server.Session, logger *server.Logger) error {
+func (tg *ExampleGame) Leave(gameData *socketapi.GameData, userID string, logger *server.Logger) error {
 
 	return nil
 }

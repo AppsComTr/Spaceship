@@ -35,7 +35,7 @@ type SessionHolder struct {
 	sessionsPerUserID map[string]Session
 	config *Config
 
-	leaveListener func(session Session) error
+	leaveListener func(userID string) error
 }
 
 func NewSessionHolder(config *Config) *SessionHolder {
@@ -95,7 +95,7 @@ func (r *SessionHolder) leave(sessionID uuid.UUID) {
 
 			if session == nil || session.IsClosed() {
 				if r.leaveListener != nil {
-					_ = r.leaveListener(session)
+					_ = r.leaveListener(userID)
 				}
 
 			}
@@ -105,7 +105,7 @@ func (r *SessionHolder) leave(sessionID uuid.UUID) {
 	}
 }
 
-func (r *SessionHolder) SetLeaveListener(fn func(session Session) error) {
+func (r *SessionHolder) SetLeaveListener(fn func(userID string) error) {
 	r.Lock()
 	r.leaveListener = fn
 	r.Unlock()
