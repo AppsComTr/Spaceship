@@ -21,10 +21,11 @@ These instructions will help you to get a copy of the project and run on your lo
 
 ### Prerequisites
 
-Spaceship requires Redis and MongoDB.
-If you are planning to use Spaceship on distributed system you also need a RabbitMQ server. But this is optional. If you don't want to use this feature, just delete connection string for **RabbitMQ** or leave it empty in configuration file. You can follow the instructions from [here](https://www.rabbitmq.com/download.html) to install your own **RabbitMQ** server.
-Redis is generally used by matchmaker module and storing game datas which is not finished yet to speed up processes.
-MongoDB is used for persistancy of user datas, scores and finished game datas etc...
+Spaceship requires **Redis**, **MongoDB** and **RabbitMQ**_(optional)_.
+
+-Redis is generally used by matchmaker module and storing game datas which is not finished yet to speed up processes.
+-MongoDB is used for persistancy of user datas, scores and finished game datas etc...
+-If you are planning to use Spaceship on distributed system you also need a RabbitMQ server. RabbitMQ is used to publish messages between system nodes and subscribe them on the nodes. But this is optional as stated above. If you don't want to use this feature, just delete connection string for **RabbitMQ** or leave it empty in configuration file. You can follow the instructions from [here](https://www.rabbitmq.com/download.html) to install your own **RabbitMQ** server.
 
 ### Installing
 
