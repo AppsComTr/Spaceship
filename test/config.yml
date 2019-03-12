@@ -14,4 +14,4 @@ authconfig:
 port: 7350
 developmentenabled: yes
 rabbitmq:
-  connectionstring: "amqp://qqbrajzx:wDiFe2gSdDxbjkFyb3mr_4raCux9VXh7@bear.rmq.cloudamqp.com/qqbrajzx"
+  connectionstring: ""

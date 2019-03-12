@@ -13,4 +13,4 @@ authconfig:
   tokenexpiretime: 86400
 port: 7350
 rabbitmq:
-  connectionstring: "amqp://qqbrajzx:wDiFe2gSdDxbjkFyb3mr_4raCux9VXh7@bear.rmq.cloudamqp.com/qqbrajzx"
+  connectionstring: ""

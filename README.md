@@ -15,6 +15,8 @@
 Spaceship is an online game backend framework designed to allow game creators to build their own game's server side without the hassle of the common parts of every multiplayer games.
 You can build your own game server with just working on logic of the game. We have support for distributed systems now.
 
+Spaceship has no client-side library for now. But currently we are working on **Unity** client.
+
 ## Getting started
 
 These instructions will help you to get a copy of the project and run on your local machine for development and testing.
