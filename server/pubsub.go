@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/streadway/amqp"
 	"spaceship/socketapi"
@@ -14,15 +15,15 @@ type PubSub struct {
 	logger *Logger
 	jsonpbMarshler *jsonpb.Marshaler
 	jsonpbUnmarshaler *jsonpb.Unmarshaler
+	context context.Context
 }
 
-func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, logger *Logger) *PubSub {
+func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, logger *Logger, context context.Context) *PubSub {
 
 	conn, err := amqp.Dial("amqp://qqbrajzx:wDiFe2gSdDxbjkFyb3mr_4raCux9VXh7@bear.rmq.cloudamqp.com/qqbrajzx")
 	if err != nil {
 		logger.Fatalw("Error while trying to connect amqp server", "error", err)
 	}
-	//TODO: don't forget to close this connection
 
 	pubChan, err := conn.Channel()
 	if err != nil {
@@ -60,7 +61,6 @@ func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, j
 	if err != nil {
 		logger.Fatalw("Error while trying to define exchange over subscribe channel", "error", err)
 	}
-
 
 	q, err := subChan.QueueDeclare(
 			"",
@@ -102,29 +102,36 @@ func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, j
 
 		defer conn.Close()
 
-		for msg := range msgs {
+		for {
 
-			if msg.ContentType == "application/json" {
+			select {
+			case <- context.Done():
+				logger.Info("Exiting from subscribe routine")
+				return
+			case msg := <- msgs:
 
-				msgModel := &socketapi.PubSubMessage{}
+				if msg.ContentType == "application/json" {
 
-				err := jsonpbUnmarshaler.Unmarshal(bytes.NewReader(msg.Body), msgModel)
-				if err != nil {
-					logger.Errorw("Error while unmarshal pub sub message data", "error", err)
-					continue
-				}
+					msgModel := &socketapi.PubSubMessage{}
 
-				for _, userID := range msgModel.UserIDs {
-
-					session := sessionHolder.GetByUserID(userID)
-					if session != nil {
-						_ = session.Send(false, 0, msgModel.Data)
+					err := jsonpbUnmarshaler.Unmarshal(bytes.NewReader(msg.Body), msgModel)
+					if err != nil {
+						logger.Errorw("Error while unmarshal pub sub message data", "error", err)
+						continue
 					}
 
-				}
+					for _, userID := range msgModel.UserIDs {
 
-			}else{
-				logger.Errorw("Unrecognized content type received", "content-type", msg.ContentType)
+						session := sessionHolder.GetByUserID(userID)
+						if session != nil {
+							_ = session.Send(false, 0, msgModel.Data)
+						}
+
+					}
+
+				}else{
+					logger.Errorw("Unrecognized content type received", "content-type", msg.ContentType)
+				}
 			}
 
 		}
@@ -139,6 +146,7 @@ func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, j
 		subChan: subChan,
 		jsonpbMarshler: jsonpbMarshler,
 		jsonpbUnmarshaler: jsonpbUnmarshaler,
+		context: context,
 	}
 
 }
