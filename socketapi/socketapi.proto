@@ -32,6 +32,11 @@ message Envelope {
     }
 }
 
+message PubSubMessage {
+    repeated string userIDs = 1;
+    Envelope data = 2;
+}
+
 message GameUpdate {
     string gameID = 1;
     string metadata = 2;

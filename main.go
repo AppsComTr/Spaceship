@@ -45,7 +45,7 @@ func main() {
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonProtoMarshaler, jsonProtoUnmarshler, leaderboard, notification)
 	leaderboard.SetGameHolder(gameHolder)
-	pubsub := server.NewPubSub(sessionHolder, logger)
+	pubsub := server.NewPubSub(sessionHolder, jsonProtoMarshaler, jsonProtoUnmarshler, logger)
 	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger, config, pubsub, appContext)
 	pipeline := server.NewPipeline(config, jsonProtoMarshaler, jsonProtoUnmarshler, gameHolder, sessionHolder, matchmaker, db, redis, notification, logger, pubsub)
 	matchmaker.SetPipeline(pipeline)

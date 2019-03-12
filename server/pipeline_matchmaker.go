@@ -1,7 +1,6 @@
 package server
 
 import (
-	"spaceship/model"
 	"spaceship/socketapi"
 )
 
@@ -9,7 +8,7 @@ func (p *Pipeline) matchmakerFind(session Session, envelope *socketapi.Envelope)
 	incomingData := envelope.GetMatchFind()
 	matchEntry, err := p.matchmaker.Find(session, incomingData.GameName, incomingData.QueueProperties)
 	if err != nil {
-		_ = p.pubSub.Send(&model.PubSubMessage{
+		_ = p.pubSub.Send(&socketapi.PubSubMessage{
 			UserIDs: []string{session.UserID()},
 			Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 				Code:    int32(socketapi.Error_MATCH_JOIN_REJECTED),
@@ -22,7 +21,7 @@ func (p *Pipeline) matchmakerFind(session Session, envelope *socketapi.Envelope)
 		//}}})
 	}
 
-	_ = p.pubSub.Send(&model.PubSubMessage{
+	_ = p.pubSub.Send(&socketapi.PubSubMessage{
 		UserIDs: []string{session.UserID()},
 		Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_MatchEntry{MatchEntry:matchEntry}},
 	})
@@ -33,7 +32,7 @@ func (p *Pipeline) matchmakerJoin(session Session, envelope *socketapi.Envelope)
 	incomingData := envelope.GetMatchJoin()
 	game, err := p.matchmaker.Join(p, session, incomingData.MatchId)
 	if err != nil {
-		_ = p.pubSub.Send(&model.PubSubMessage{
+		_ = p.pubSub.Send(&socketapi.PubSubMessage{
 			UserIDs: []string{session.UserID()},
 			Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 				Code:    int32(socketapi.Error_MATCH_JOIN_REJECTED),
@@ -47,7 +46,7 @@ func (p *Pipeline) matchmakerJoin(session Session, envelope *socketapi.Envelope)
 	}
 
 	ms := socketapi.MatchJoinResp{GameData: game}
-	_ = p.pubSub.Send(&model.PubSubMessage{
+	_ = p.pubSub.Send(&socketapi.PubSubMessage{
 		UserIDs: []string{session.UserID()},
 		Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_MatchStart{MatchStart:&ms}},
 	})

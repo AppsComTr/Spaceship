@@ -1,9 +1,10 @@
 package server
 
 import (
-	"encoding/json"
+	"bytes"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/streadway/amqp"
-	"spaceship/model"
+	"spaceship/socketapi"
 )
 
 type PubSub struct {
@@ -11,9 +12,11 @@ type PubSub struct {
 	subChan *amqp.Channel
 	sessionHolder *SessionHolder
 	logger *Logger
+	jsonpbMarshler *jsonpb.Marshaler
+	jsonpbUnmarshaler *jsonpb.Unmarshaler
 }
 
-func NewPubSub(sessionHolder *SessionHolder, logger *Logger) *PubSub {
+func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, logger *Logger) *PubSub {
 
 	conn, err := amqp.Dial("amqp://qqbrajzx:wDiFe2gSdDxbjkFyb3mr_4raCux9VXh7@bear.rmq.cloudamqp.com/qqbrajzx")
 	if err != nil {
@@ -103,9 +106,9 @@ func NewPubSub(sessionHolder *SessionHolder, logger *Logger) *PubSub {
 
 			if msg.ContentType == "application/json" {
 
-				msgModel := model.PubSubMessage{}
+				msgModel := &socketapi.PubSubMessage{}
 
-				err := json.Unmarshal(msg.Body, &msgModel)
+				err := jsonpbUnmarshaler.Unmarshal(bytes.NewReader(msg.Body), msgModel)
 				if err != nil {
 					logger.Errorw("Error while unmarshal pub sub message data", "error", err)
 					continue
@@ -115,12 +118,7 @@ func NewPubSub(sessionHolder *SessionHolder, logger *Logger) *PubSub {
 
 					session := sessionHolder.GetByUserID(userID)
 					if session != nil {
-						msgData, err := json.Marshal(msgModel.Data)
-						if err != nil {
-							logger.Errorw("Error while trying to marshal message data", "error", err)
-							break
-						}
-						_ = session.SendBytes(false, 0, msgData)
+						_ = session.Send(false, 0, msgModel.Data)
 					}
 
 				}
@@ -139,13 +137,16 @@ func NewPubSub(sessionHolder *SessionHolder, logger *Logger) *PubSub {
 		logger: logger,
 		pubChan: pubChan,
 		subChan: subChan,
+		jsonpbMarshler: jsonpbMarshler,
+		jsonpbUnmarshaler: jsonpbUnmarshaler,
 	}
 
 }
 
-func (ps *PubSub) Send(message *model.PubSubMessage) error {
+func (ps *PubSub) Send(message *socketapi.PubSubMessage) error {
 
-	data, err := json.Marshal(message)
+
+	data, err := ps.jsonpbMarshler.MarshalToString(message)
 	if err != nil {
 		ps.logger.Errorw("Error while trying to marshal message in send method of pubsub module", "error", err)
 		return err
@@ -158,7 +159,7 @@ func (ps *PubSub) Send(message *model.PubSubMessage) error {
 		false,
 		amqp.Publishing{
 			ContentType: "application/json",
-			Body: data,
+			Body: []byte(data),
 		})
 
 	if err != nil {

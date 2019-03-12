@@ -7,7 +7,6 @@ import (
 	"github.com/kayalardanmehmet/redsync-radix"
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
-	"spaceship/model"
 	"spaceship/socketapi"
 	"sync"
 	"time"
@@ -647,7 +646,7 @@ func (m *LocalMatchmaker) LeaveActiveGames(userID string) error {
 //Anti pattern
 func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.MatchEntry, selfUserID string, err error, code int32) {
 	if err != nil {
-		_ = m.pubSub.Send(&model.PubSubMessage{
+		_ = m.pubSub.Send(&socketapi.PubSubMessage{
 			UserIDs: []string{session.UserID()},
 			Data: &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchError{
 				MatchError: &socketapi.MatchError{
@@ -687,7 +686,7 @@ func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.Match
 		//}
 	}
 
-	_ = m.pubSub.Send(&model.PubSubMessage{
+	_ = m.pubSub.Send(&socketapi.PubSubMessage{
 		UserIDs: userIDs,
 		Data: message,
 	})

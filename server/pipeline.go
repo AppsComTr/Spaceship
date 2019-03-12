@@ -5,7 +5,6 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/kayalardanmehmet/redsync-radix"
 	"github.com/mediocregopher/radix/v3"
-	"spaceship/model"
 	"spaceship/socketapi"
 )
 
@@ -58,7 +57,7 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 
 		if err != nil {
 			p.logger.Errorw("Error occured while updating game state", "error", err)
-			_ = p.pubSub.Send(&model.PubSubMessage{
+			_ = p.pubSub.Send(&socketapi.PubSubMessage{
 				UserIDs: []string{session.UserID()},
 				Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 					Code: int32(socketapi.Error_RUNTIME_EXCEPTION),
@@ -82,7 +81,7 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 		// If we reached this point the envelope was valid but the contents are missing or unknown.
 		// Usually caused by a version mismatch, and should cause the session making this pipeline request to close.
 		p.logger.Errorw("Unrecognizable payload received.", "envelope", envelope)
-		_ = p.pubSub.Send(&model.PubSubMessage{
+		_ = p.pubSub.Send(&socketapi.PubSubMessage{
 			UserIDs: []string{session.UserID()},
 			Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
 				Code:    int32(socketapi.Error_UNRECOGNIZED_PAYLOAD),

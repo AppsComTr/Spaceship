@@ -1,7 +1,6 @@
 package server
 
 import (
-	"spaceship/model"
 	"spaceship/socketapi"
 )
 
@@ -9,7 +8,7 @@ func (p Pipeline) broadcastGame(gameData *socketapi.GameData) {
 	//Need to fetch all users session by their ids from gameData and send them msg
 	message := &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_GameUpdateResp{GameUpdateResp: &socketapi.GameUpdateResp{GameData: gameData}}}
 
-	_ = p.pubSub.Send(&model.PubSubMessage{
+	_ = p.pubSub.Send(&socketapi.PubSubMessage{
 		UserIDs: gameData.UserIDs,
 		Data: message,
 	})

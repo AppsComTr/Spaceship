@@ -32,6 +32,8 @@ var (
 
 func NewServer(t *testing.T) (*server.Server) {
 
+	appContext, _ := context.WithCancel(context.Background())
+
 	config := &server.Config{}
 	err := configor.Load(config, "config.yml")
 	if err != nil {
@@ -48,8 +50,10 @@ func NewServer(t *testing.T) (*server.Server) {
 	stats := server.NewStatsHolder(logger)
 	sessionHolder := server.NewSessionHolder(config)
 	gameHolder := server.NewGameHolder(redis, jsonpbMarshaler, jsonpbUnmarshaler, leaderboard, notification)
-	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger, config)
-	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis, notification, logger)
+	pubsub := server.NewPubSub(sessionHolder, jsonpbMarshaler, jsonpbUnmarshaler, logger)
+	matchmaker := server.NewLocalMatchMaker(redis, gameHolder, sessionHolder, notification, logger, config, pubsub, appContext)
+	pipeline := server.NewPipeline(config, jsonpbMarshaler, jsonpbUnmarshaler, gameHolder, sessionHolder, matchmaker, db, redis, notification, logger, pubsub)
+	matchmaker.SetPipeline(pipeline)
 
 	gameHolder.Add(&PTGame{})
 	gameHolder.Add(&ATGame{})
