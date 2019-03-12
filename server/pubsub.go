@@ -145,26 +145,46 @@ func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, j
 
 func (ps *PubSub) Send(message *socketapi.PubSubMessage) error {
 
+	//We can check the user ids to select the ones already belongs to current node
+	//So, we can send message to them directly instead of publishing
 
-	data, err := ps.jsonpbMarshler.MarshalToString(message)
-	if err != nil {
-		ps.logger.Errorw("Error while trying to marshal message in send method of pubsub module", "error", err)
-		return err
+	publishUserIDs := make([]string, 0)
+
+	for _, userID := range message.UserIDs {
+
+		session := ps.sessionHolder.GetByUserID(userID)
+		if session != nil {
+			_ = session.Send(false, 0, message.Data)
+		}else{
+			publishUserIDs = append(publishUserIDs, userID)
+		}
+
 	}
 
-	err = ps.pubChan.Publish(
-		"messages",
-		"",
-		false,
-		false,
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body: []byte(data),
-		})
+	//If we still have user IDs remaining we need to publish them
+	if len(publishUserIDs) > 0 {
 
-	if err != nil {
-		ps.logger.Errorw("Error while trying to publish data in send method of pubsub module", "error", err)
-		return err
+		message.UserIDs = publishUserIDs
+		data, err := ps.jsonpbMarshler.MarshalToString(message)
+		if err != nil {
+			ps.logger.Errorw("Error while trying to marshal message in send method of pubsub module", "error", err)
+			return err
+		}
+
+		err = ps.pubChan.Publish(
+			"messages",
+			"",
+			false,
+			false,
+			amqp.Publishing{
+				ContentType: "application/json",
+				Body: []byte(data),
+			})
+
+		if err != nil {
+			ps.logger.Errorw("Error while trying to publish data in send method of pubsub module", "error", err)
+			return err
+		}
 	}
 
 	return nil
