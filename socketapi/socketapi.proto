@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package spaceship.socket;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "spaceship/api/api.proto";
+
+option go_package = "socketapi";
+
+option java_multiple_files = true;
+option java_outer_classname = "SpaceShipSocket";
+option java_package = "tr.com.apps.spaceship.socketapi";
+
+option csharp_namespace = "SpaceShip";
+
+option objc_class_prefix = "SSP";
+
+message Envelope {
+    string cid = 1;
+    oneof message {
+        Error error = 2;
+        MatchError match_error = 3;
+        MatchJoinResp match_start = 4;
+        GameUpdate game_update = 5;
+        MatchFind match_find = 6;
+        MatchJoin match_join = 7;
+        MatchLeave match_leave = 8;
+        MatchEntry match_entry = 9;
+        GameData game_data = 10;
+        GameUpdateResp game_update_resp = 11;
+    }
+}
+
+message PubSubMessage {
+    repeated string userIDs = 1;
+    Envelope data = 2;
+}
+
+message GameUpdate {
+    string gameID = 1;
+    string metadata = 2;
+}
+
+message GameUpdateQueue {
+    string gameID = 1;
+    string userID = 2;
+    string metadata = 3;
+}
+
+message GameUpdateResp {
+    GameData game_data = 1;
+}
+
+// A logical error which may occur on the server.
+message Error {
+    // The selection of possible error codes.
+    enum Code {
+        // An unexpected result from the server.
+        RUNTIME_EXCEPTION = 0;
+        // The server received a message which is not recognised.
+        UNRECOGNIZED_PAYLOAD = 1;
+        // A message was expected but contains no content.
+        MISSING_PAYLOAD = 2;
+        // Fields in the message have an invalid format.
+        BAD_INPUT = 3;
+        // The match id was not found.
+        MATCH_NOT_FOUND = 4;
+        // The match join was rejected.
+        MATCH_JOIN_REJECTED = 5;
+        // The runtime function does not exist on the server.
+        RUNTIME_FUNCTION_NOT_FOUND = 6;
+        // The runtime function executed with an error.
+        RUNTIME_FUNCTION_EXCEPTION = 7;
+        // Generic not found error code
+        NOT_FOUND = 8;
+    }
+
+    // The error code which should be one of "Error.Code" enums.
+    int32 code = 1;
+    // A message in English to help developers debug the response.
+    string message = 2;
+    // Additional error details which may be different for each response.
+    map<string, string> context = 3;
+}
+
+message MatchJoinResp {
+    GameData game_data = 1;
+}
+
+message MatchFind {
+    string game_name = 1;
+    map<string, string> queue_properties = 2;
+}
+
+message MatchJoin {
+    string match_id = 1;
+}
+
+
+message MatchLeave {
+    string match_id = 1;
+}
+
+message MatchEntry {
+    enum State {
+        MATCH_FINDING_PLAYERS = 0;
+        MATCH_AWAITING_PLAYERS = 1;
+        MATCH_JOINING_PLAYERS = 2;
+        GAME_CREATED = 3;
+    }
+
+    message MatchUser {
+        enum State {
+            NOT_READY = 0;
+            READY = 2;
+        }
+        string user_id = 1;
+        string username = 2;
+        int32 state = 3;
+    }
+
+    string match_id = 1;
+    int32 state = 2;
+
+    int32 max_count = 3;
+    int32 active_count = 4;
+    string game = 5;
+
+    repeated MatchUser users = 6;
+
+    string gameName = 7;
+    string queuekey = 8;
+}
+
+message MatchError {
+    enum Code {
+        MATCH_TIMEOUT = 0;
+        MATCH_INTERNAL_ERROR = 1;
+    }
+    int32 code = 1;
+    string message = 2;
+}
+
+message GameData {
+    string id = 1;
+    string name = 2;
+    string metadata = 3;
+    int64 createdAt = 4;
+    int64 updatedAt = 5;
+    string gameName = 6;
+    repeated string userIDs = 7;
+}

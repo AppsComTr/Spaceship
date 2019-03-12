@@ -18,12 +18,13 @@ option csharp_namespace = "SpaceShip";
 
 option objc_class_prefix = "SSP";
 
-message AuthenticateFingerprintRequest {
-    AuthenticateFingerprint fingerprint = 1;
-}
-
 message AuthenticateFingerprint {
     string fingerprint = 1;
+}
+
+message AuthenticateFacebook {
+    string fingerprint = 1;
+    string token = 2;
 }
 
 message User {
@@ -31,16 +32,12 @@ message User {
     string id = 1;
     // The username of the user's account.
     string username = 2;
-    // The fingerprint parameter for the user
-    string fingerprint = 3;
     // The display name of the user.
     string display_name = 4;
     // A URL for an avatar image.
     string avatar_url = 5;
     // Additional information stored as a JSON object.
     string metadata = 6;
-    // The Facebook id in the user's account.
-    string facebook_id = 7;
     // Indicates whether the user is currently online.
     bool online = 8;
     // The UNIX time when the user was created.
@@ -49,8 +46,46 @@ message User {
     google.protobuf.Timestamp update_time = 10;
 }
 
+message UserFriends {
+    repeated User friends = 1;
+}
+
+message FriendRequest {
+    string user_id = 1;
+    string username = 2;
+}
+
+message NotificationTokenUpdate {
+    string old_token = 1;
+    string token = 2;
+}
+
+message UserUpdate {
+    string display_name = 1;
+    string avatar = 2;
+}
+
 message Session {
     User user = 1;
 
     string token = 2;
+}
+
+message Leaderboard {
+    User user = 1;
+    int64 score = 2;
+}
+
+message LeaderboardRequest {
+    string type = 1;
+    string game_name = 2;
+    string page = 3;
+    string user_id = 4;
+}
+
+message LeaderboardResponse {
+    repeated Leaderboard items = 1;
+    int32 item_count = 2;
+    int32 page = 3;
+    bool has_next_page = 4;
 }

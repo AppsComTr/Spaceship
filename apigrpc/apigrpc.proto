@@ -17,12 +17,127 @@ option csharp_namespace = "SpaceShip";
 
 option objc_class_prefix = "SSP";
 
+option (grpc.gateway.protoc_gen_swagger.options.openapiv2_swagger) = {
+  info: {
+    title: "Space Ship API v1";
+    version: "1.0";
+    contact: {
+        name: "APPS Information Tech.";
+        url: "https://apps.com.tr";
+        email: "info@apps.com.tr";
+    };
+  };
+  host: "127.0.0.1:7350";
+  schemes: HTTP;
+  consumes: "application/json";
+  produces: "application/json";
+  security_definitions: {
+    security: {
+      key: "BasicAuth";
+      value: {
+        type: TYPE_BASIC;
+      }
+    }
+    security: {
+    // Made up security so we can apply "Bearer <JWT_TOKEN>"
+      key: "BearerJwt";
+      value: {
+        type: TYPE_INVALID;
+      }
+    }
+  }
+  // Default security definition.
+  security: {
+    security_requirement: {
+      key: "BearerJwt";
+      value: {};
+    }
+  }
+};
+
 service SpaceShip {
 
     rpc AuthenticateFingerprint(api.AuthenticateFingerprint) returns (api.Session) {
         option (google.api.http) = {
             post: "/v1/account/authenticate/fingerprint",
             body: "*"
+        };
+    }
+
+    rpc AuthenticateFacebook(api.AuthenticateFacebook) returns (api.Session) {
+        option (google.api.http) = {
+            post: "/v1/account/authenticate/facebook",
+            body: "*"
+        };
+    }
+
+    rpc UpdateUser(api.UserUpdate) returns (api.User) {
+        option (google.api.http) = {
+            put: "/v1/account/update",
+            body: "*"
+        };
+    }
+
+    rpc UnlinkFacebook(google.protobuf.Empty) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/account/authenticate/facebook"
+        };
+    }
+
+    rpc AddNotificationToken(api.NotificationTokenUpdate) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/account/notification",
+            body: "*"
+        };
+    }
+
+    rpc UpdateNotificationToken(api.NotificationTokenUpdate) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/v1/account/notification",
+            body: "*"
+        };
+    }
+
+    rpc DeleteNotificationToken(api.NotificationTokenUpdate) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/account/notification/{token}"
+        };
+    }
+
+    rpc GetLeaderboard(LeaderboardRequest) returns (api.LeaderboardResponse) {
+        option (google.api.http) = {
+            get: "/v1/leaderboard/{type}/game/{game_name}"
+            additional_bindings {
+                get: "/v1/leaderboard/{type}/game/{game_name}/page/{page}"
+            }
+            additional_bindings {
+                get: "/v1/leaderboard/{type}/game/{game_name}/user/{user_id}"
+            }
+        };
+    }
+
+    rpc GetFriends(google.protobuf.Empty) returns (api.UserFriends) {
+        option (google.api.http) = {
+            get: "/v1/friends"
+        };
+    }
+
+    rpc AddFriend(api.FriendRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/friends"
+            body: "*"
+        };
+    }
+
+    rpc DeleteFriend(api.FriendRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            delete: "/v1/friends/{user_id}"
+        };
+    }
+
+    rpc TestEcho(google.protobuf.Empty) returns (api.Session) {
+        option (google.api.http) = {
+            get: "/v1/echo"
         };
     }
 

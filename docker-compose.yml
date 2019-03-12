@@ -8,8 +8,13 @@ services:
       - "80:7350"
     links:
       - mongo
+      - redis
     depends_on:
       - mongo
+      - redis
+    volumes:
+      - ./assets:/var/spaceshipassets
+      - .:/go/src/spaceship
   mongo:
     container_name: mongo
     image: mongo
@@ -17,3 +22,9 @@ services:
       - ./data:/data/db
     ports:
       - "27017:27017"
+  redis:
+    container_name: redis
+    image: redis
+    restart: always
+    ports:
+      - "6379:6379"

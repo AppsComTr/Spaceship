@@ -3,16 +3,17 @@
 
 package apigrpc
 
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
+import empty "github.com/golang/protobuf/ptypes/empty"
+import _ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options"
+import _ "google.golang.org/genproto/googleapis/api/annotations"
+import api "spaceship/api"
+
 import (
-	context "context"
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	_ "github.com/golang/protobuf/ptypes/empty"
-	_ "github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger/options"
-	_ "google.golang.org/genproto/googleapis/api/annotations"
+	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
-	math "math"
-	api "spaceship/api"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -25,29 +26,6 @@ var _ = math.Inf
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
-func init() { proto.RegisterFile("apigrpc/apigrpc.proto", fileDescriptor_84e2d31978c605c7) }
-
-var fileDescriptor_84e2d31978c605c7 = []byte{
-	// 264 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x90, 0xbf, 0x4a, 0x03, 0x41,
-	0x10, 0x87, 0xb9, 0x08, 0x8a, 0x87, 0x36, 0x07, 0x1a, 0x3c, 0xad, 0x82, 0x08, 0x8a, 0xd9, 0x45,
-	0xed, 0xec, 0x92, 0x22, 0x75, 0x60, 0x3b, 0xbb, 0xc9, 0xb2, 0xd9, 0x1b, 0x30, 0x3b, 0xc3, 0xee,
-	0x9c, 0x62, 0x6b, 0x69, 0x6b, 0x63, 0x6d, 0xe9, 0xeb, 0xf8, 0x0a, 0x3e, 0x88, 0xe4, 0xee, 0x48,
-	0x8c, 0x68, 0x35, 0x2c, 0xbf, 0x6f, 0xbf, 0xf9, 0x93, 0x1f, 0x00, 0xa3, 0x8f, 0x6c, 0x75, 0x57,
-	0x15, 0x47, 0x12, 0x2a, 0xf6, 0x13, 0x83, 0x75, 0xa9, 0x42, 0x56, 0xc0, 0x58, 0x9e, 0x78, 0x22,
-	0x7f, 0xef, 0x96, 0x90, 0x86, 0x10, 0x48, 0x40, 0x90, 0x42, 0x6a, 0xe1, 0xf2, 0xb8, 0x4b, 0x9b,
-	0xd7, 0xac, 0x9e, 0x6b, 0xb7, 0x60, 0x79, 0xea, 0xc2, 0xcb, 0xa6, 0xd8, 0xa1, 0x77, 0x61, 0x98,
-	0x1e, 0xc1, 0x7b, 0x17, 0x35, 0x71, 0xf3, 0xfd, 0x0f, 0x55, 0x7f, 0xd5, 0xb7, 0xed, 0xc5, 0xd8,
-	0x06, 0xd7, 0x6f, 0x59, 0xbe, 0x6b, 0x96, 0x99, 0xa9, 0x90, 0x8b, 0x97, 0x2c, 0xef, 0x8f, 0x6a,
-	0xa9, 0x5c, 0x10, 0xb4, 0x20, 0x6e, 0x82, 0xc1, 0xbb, 0xc8, 0x11, 0x83, 0x14, 0x67, 0x6a, 0x63,
-	0x76, 0xf5, 0x0f, 0x57, 0x1e, 0xfe, 0xe2, 0x8c, 0x4b, 0x09, 0x29, 0x0c, 0xf4, 0xf3, 0xe7, 0xd7,
-	0x6b, 0xef, 0x7c, 0x70, 0xaa, 0x1f, 0xae, 0x34, 0x58, 0x4b, 0x75, 0x10, 0x0d, 0x3f, 0x24, 0x7a,
-	0xbe, 0xb6, 0xdc, 0x66, 0x17, 0xe3, 0x49, 0x7e, 0x24, 0x51, 0x59, 0x5a, 0x28, 0x60, 0x4e, 0x9b,
-	0xd6, 0xf1, 0xde, 0x6a, 0xe8, 0x11, 0xe3, 0x34, 0xbb, 0xdb, 0xe9, 0xee, 0xfc, 0xde, 0xdb, 0x32,
-	0x66, 0xfa, 0xd1, 0x5b, 0x2f, 0x35, 0xdb, 0x6e, 0x36, 0xbd, 0xf9, 0x0e, 0x00, 0x00, 0xff, 0xff,
-	0x49, 0xdb, 0x7e, 0x4d, 0x93, 0x01, 0x00, 0x00,
-}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
@@ -62,6 +40,17 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SpaceShipClient interface {
 	AuthenticateFingerprint(ctx context.Context, in *api.AuthenticateFingerprint, opts ...grpc.CallOption) (*api.Session, error)
+	AuthenticateFacebook(ctx context.Context, in *api.AuthenticateFacebook, opts ...grpc.CallOption) (*api.Session, error)
+	UpdateUser(ctx context.Context, in *api.UserUpdate, opts ...grpc.CallOption) (*api.User, error)
+	UnlinkFacebook(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*empty.Empty, error)
+	AddNotificationToken(ctx context.Context, in *api.NotificationTokenUpdate, opts ...grpc.CallOption) (*empty.Empty, error)
+	UpdateNotificationToken(ctx context.Context, in *api.NotificationTokenUpdate, opts ...grpc.CallOption) (*empty.Empty, error)
+	DeleteNotificationToken(ctx context.Context, in *api.NotificationTokenUpdate, opts ...grpc.CallOption) (*empty.Empty, error)
+	GetLeaderboard(ctx context.Context, in *api.LeaderboardRequest, opts ...grpc.CallOption) (*api.LeaderboardResponse, error)
+	GetFriends(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.UserFriends, error)
+	AddFriend(ctx context.Context, in *api.FriendRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	DeleteFriend(ctx context.Context, in *api.FriendRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	TestEcho(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.Session, error)
 }
 
 type spaceShipClient struct {
@@ -81,9 +70,119 @@ func (c *spaceShipClient) AuthenticateFingerprint(ctx context.Context, in *api.A
 	return out, nil
 }
 
+func (c *spaceShipClient) AuthenticateFacebook(ctx context.Context, in *api.AuthenticateFacebook, opts ...grpc.CallOption) (*api.Session, error) {
+	out := new(api.Session)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/AuthenticateFacebook", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) UpdateUser(ctx context.Context, in *api.UserUpdate, opts ...grpc.CallOption) (*api.User, error) {
+	out := new(api.User)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/UpdateUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) UnlinkFacebook(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/UnlinkFacebook", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) AddNotificationToken(ctx context.Context, in *api.NotificationTokenUpdate, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/AddNotificationToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) UpdateNotificationToken(ctx context.Context, in *api.NotificationTokenUpdate, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/UpdateNotificationToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) DeleteNotificationToken(ctx context.Context, in *api.NotificationTokenUpdate, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/DeleteNotificationToken", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) GetLeaderboard(ctx context.Context, in *api.LeaderboardRequest, opts ...grpc.CallOption) (*api.LeaderboardResponse, error) {
+	out := new(api.LeaderboardResponse)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/GetLeaderboard", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) GetFriends(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.UserFriends, error) {
+	out := new(api.UserFriends)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/GetFriends", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) AddFriend(ctx context.Context, in *api.FriendRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/AddFriend", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) DeleteFriend(ctx context.Context, in *api.FriendRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/DeleteFriend", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *spaceShipClient) TestEcho(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*api.Session, error) {
+	out := new(api.Session)
+	err := c.cc.Invoke(ctx, "/spaceship.api.SpaceShip/TestEcho", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SpaceShipServer is the server API for SpaceShip service.
 type SpaceShipServer interface {
 	AuthenticateFingerprint(context.Context, *api.AuthenticateFingerprint) (*api.Session, error)
+	AuthenticateFacebook(context.Context, *api.AuthenticateFacebook) (*api.Session, error)
+	UpdateUser(context.Context, *api.UserUpdate) (*api.User, error)
+	UnlinkFacebook(context.Context, *empty.Empty) (*empty.Empty, error)
+	AddNotificationToken(context.Context, *api.NotificationTokenUpdate) (*empty.Empty, error)
+	UpdateNotificationToken(context.Context, *api.NotificationTokenUpdate) (*empty.Empty, error)
+	DeleteNotificationToken(context.Context, *api.NotificationTokenUpdate) (*empty.Empty, error)
+	GetLeaderboard(context.Context, *api.LeaderboardRequest) (*api.LeaderboardResponse, error)
+	GetFriends(context.Context, *empty.Empty) (*api.UserFriends, error)
+	AddFriend(context.Context, *api.FriendRequest) (*empty.Empty, error)
+	DeleteFriend(context.Context, *api.FriendRequest) (*empty.Empty, error)
+	TestEcho(context.Context, *empty.Empty) (*api.Session, error)
 }
 
 func RegisterSpaceShipServer(s *grpc.Server, srv SpaceShipServer) {
@@ -108,6 +207,204 @@ func _SpaceShip_AuthenticateFingerprint_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SpaceShip_AuthenticateFacebook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.AuthenticateFacebook)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).AuthenticateFacebook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/AuthenticateFacebook",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).AuthenticateFacebook(ctx, req.(*api.AuthenticateFacebook))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.UserUpdate)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).UpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/UpdateUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).UpdateUser(ctx, req.(*api.UserUpdate))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_UnlinkFacebook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).UnlinkFacebook(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/UnlinkFacebook",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).UnlinkFacebook(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_AddNotificationToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.NotificationTokenUpdate)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).AddNotificationToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/AddNotificationToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).AddNotificationToken(ctx, req.(*api.NotificationTokenUpdate))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_UpdateNotificationToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.NotificationTokenUpdate)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).UpdateNotificationToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/UpdateNotificationToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).UpdateNotificationToken(ctx, req.(*api.NotificationTokenUpdate))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_DeleteNotificationToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.NotificationTokenUpdate)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).DeleteNotificationToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/DeleteNotificationToken",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).DeleteNotificationToken(ctx, req.(*api.NotificationTokenUpdate))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_GetLeaderboard_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.LeaderboardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).GetLeaderboard(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/GetLeaderboard",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).GetLeaderboard(ctx, req.(*api.LeaderboardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_GetFriends_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).GetFriends(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/GetFriends",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).GetFriends(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_AddFriend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.FriendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).AddFriend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/AddFriend",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).AddFriend(ctx, req.(*api.FriendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_DeleteFriend_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(api.FriendRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).DeleteFriend(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/DeleteFriend",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).DeleteFriend(ctx, req.(*api.FriendRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SpaceShip_TestEcho_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(empty.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SpaceShipServer).TestEcho(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/spaceship.api.SpaceShip/TestEcho",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SpaceShipServer).TestEcho(ctx, req.(*empty.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _SpaceShip_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "spaceship.api.SpaceShip",
 	HandlerType: (*SpaceShipServer)(nil),
@@ -116,7 +413,106 @@ var _SpaceShip_serviceDesc = grpc.ServiceDesc{
 			MethodName: "AuthenticateFingerprint",
 			Handler:    _SpaceShip_AuthenticateFingerprint_Handler,
 		},
+		{
+			MethodName: "AuthenticateFacebook",
+			Handler:    _SpaceShip_AuthenticateFacebook_Handler,
+		},
+		{
+			MethodName: "UpdateUser",
+			Handler:    _SpaceShip_UpdateUser_Handler,
+		},
+		{
+			MethodName: "UnlinkFacebook",
+			Handler:    _SpaceShip_UnlinkFacebook_Handler,
+		},
+		{
+			MethodName: "AddNotificationToken",
+			Handler:    _SpaceShip_AddNotificationToken_Handler,
+		},
+		{
+			MethodName: "UpdateNotificationToken",
+			Handler:    _SpaceShip_UpdateNotificationToken_Handler,
+		},
+		{
+			MethodName: "DeleteNotificationToken",
+			Handler:    _SpaceShip_DeleteNotificationToken_Handler,
+		},
+		{
+			MethodName: "GetLeaderboard",
+			Handler:    _SpaceShip_GetLeaderboard_Handler,
+		},
+		{
+			MethodName: "GetFriends",
+			Handler:    _SpaceShip_GetFriends_Handler,
+		},
+		{
+			MethodName: "AddFriend",
+			Handler:    _SpaceShip_AddFriend_Handler,
+		},
+		{
+			MethodName: "DeleteFriend",
+			Handler:    _SpaceShip_DeleteFriend_Handler,
+		},
+		{
+			MethodName: "TestEcho",
+			Handler:    _SpaceShip_TestEcho_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "apigrpc/apigrpc.proto",
+}
+
+func init() { proto.RegisterFile("apigrpc/apigrpc.proto", fileDescriptor_apigrpc_c8485cf0ae7078c7) }
+
+var fileDescriptor_apigrpc_c8485cf0ae7078c7 = []byte{
+	// 780 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x55, 0x41, 0x8f, 0x1b, 0x35,
+	0x14, 0x66, 0x52, 0x09, 0x36, 0x6e, 0x77, 0x1b, 0xbc, 0x6d, 0x42, 0x87, 0x56, 0x4a, 0x67, 0x51,
+	0xa1, 0x51, 0x3b, 0x4e, 0xb2, 0x2a, 0x45, 0xb9, 0x40, 0x22, 0xda, 0xaa, 0xa8, 0x42, 0x11, 0xd9,
+	0x1c, 0x1a, 0x0e, 0x95, 0x33, 0xf3, 0x32, 0x31, 0x49, 0x6c, 0x33, 0x76, 0xba, 0x5a, 0x45, 0x41,
+	0x02, 0x6e, 0x5c, 0x90, 0xe0, 0xc6, 0x0d, 0x8e, 0xfc, 0x0f, 0x6e, 0xdc, 0xf8, 0x0b, 0xfc, 0x0b,
+	0x2e, 0xc8, 0x9e, 0xd9, 0xdd, 0xd9, 0x6c, 0x26, 0xac, 0x84, 0xf6, 0xe2, 0x28, 0xef, 0x7d, 0xfe,
+	0xbe, 0xcf, 0x7e, 0x6f, 0x9e, 0xd1, 0x4d, 0x2a, 0x59, 0x14, 0xcb, 0x80, 0xa4, 0xbf, 0xbe, 0x8c,
+	0x85, 0x16, 0x78, 0x5b, 0x49, 0x1a, 0x80, 0x1a, 0x33, 0xe9, 0x53, 0xc9, 0xdc, 0xdb, 0x91, 0x10,
+	0xd1, 0x14, 0x0c, 0x88, 0x50, 0xce, 0x85, 0xa6, 0x9a, 0x09, 0xae, 0x12, 0xb0, 0xfb, 0x6e, 0x9a,
+	0xb5, 0xff, 0x86, 0xf3, 0x11, 0x81, 0x99, 0xd4, 0x47, 0x69, 0xf2, 0x81, 0xfd, 0x09, 0x1e, 0x46,
+	0xc0, 0x1f, 0xaa, 0x43, 0x1a, 0x45, 0x10, 0x13, 0x21, 0xed, 0xf6, 0x35, 0x54, 0x95, 0x13, 0xdd,
+	0x44, 0x4b, 0xb2, 0x24, 0xd1, 0xfc, 0xf3, 0x2a, 0x2a, 0xf6, 0x4c, 0xae, 0x37, 0x66, 0x12, 0xff,
+	0xe0, 0xa0, 0x4a, 0x7b, 0xae, 0xc7, 0xc0, 0x35, 0x0b, 0xa8, 0x86, 0xa7, 0x8c, 0x47, 0x10, 0xcb,
+	0x98, 0x71, 0x8d, 0xef, 0xf9, 0x67, 0xbc, 0xfb, 0x39, 0x38, 0xb7, 0xbc, 0x82, 0xeb, 0x81, 0x52,
+	0x4c, 0x70, 0x8f, 0x7c, 0xf7, 0xd7, 0xdf, 0x3f, 0x17, 0xee, 0x7b, 0xef, 0x91, 0xd7, 0x0d, 0x42,
+	0x83, 0x40, 0xcc, 0xb9, 0x26, 0x34, 0x43, 0x42, 0x46, 0xa7, 0x2c, 0x2d, 0xa7, 0x86, 0xbf, 0x75,
+	0xd0, 0x8d, 0x33, 0x22, 0x34, 0x80, 0xa1, 0x10, 0x13, 0xbc, 0xb7, 0xc9, 0x49, 0x0a, 0xca, 0xb5,
+	0xf1, 0xc0, 0xda, 0xb8, 0xe7, 0xdd, 0xcd, 0xb7, 0x91, 0x52, 0x18, 0x0f, 0x5f, 0x22, 0xd4, 0x97,
+	0x21, 0xd5, 0xd0, 0x57, 0x10, 0xe3, 0x5b, 0x2b, 0x9c, 0x26, 0x98, 0xa4, 0xdd, 0xdd, 0x35, 0x29,
+	0xef, 0x8e, 0xd5, 0xaa, 0xb8, 0x38, 0xab, 0x35, 0xb7, 0x1b, 0x0c, 0xf9, 0x04, 0xed, 0xf4, 0xf9,
+	0x94, 0xf1, 0xc9, 0xc9, 0xc9, 0xca, 0x7e, 0x52, 0x72, 0xff, 0xb8, 0xe4, 0xfe, 0x13, 0x53, 0x72,
+	0x37, 0x27, 0xee, 0xdd, 0xb7, 0x02, 0x7b, 0xb5, 0xff, 0x3e, 0x0c, 0x5e, 0xa0, 0x1b, 0xed, 0x30,
+	0xfc, 0x5c, 0x68, 0x36, 0x32, 0x19, 0x26, 0xf8, 0x81, 0x98, 0x00, 0x3f, 0x57, 0xd6, 0x73, 0x88,
+	0xf4, 0x80, 0x79, 0x16, 0xf6, 0xac, 0x85, 0x3b, 0xde, 0x3b, 0x59, 0x0b, 0x3c, 0x43, 0x62, 0x4e,
+	0xfa, 0x0d, 0xaa, 0x24, 0x34, 0x97, 0xa6, 0xef, 0x6e, 0xd4, 0xff, 0xde, 0x41, 0x95, 0x4f, 0x61,
+	0x0a, 0x97, 0x61, 0xe0, 0x03, 0x6b, 0xc0, 0xab, 0x55, 0xf3, 0x0c, 0x90, 0x85, 0x36, 0x34, 0x4b,
+	0xfc, 0x8f, 0x83, 0x76, 0x9e, 0x81, 0x7e, 0x01, 0x34, 0x84, 0x78, 0x28, 0x68, 0x1c, 0xe2, 0xbb,
+	0x2b, 0xe2, 0x99, 0xdc, 0x17, 0xf0, 0xf5, 0x1c, 0x94, 0x76, 0xbd, 0x4d, 0x10, 0x25, 0x05, 0x57,
+	0xe0, 0xfd, 0xea, 0x58, 0x13, 0xbf, 0x38, 0xf8, 0x7d, 0xe3, 0x62, 0x7a, 0x0a, 0x21, 0x0b, 0x7d,
+	0x24, 0x61, 0x49, 0x22, 0x3a, 0x03, 0xb2, 0x30, 0xeb, 0x2b, 0x4e, 0x67, 0xb0, 0x1c, 0x3c, 0xc2,
+	0xfb, 0x17, 0x84, 0x12, 0x49, 0x23, 0x20, 0x0b, 0xb3, 0x2e, 0x07, 0x1f, 0xe1, 0x0f, 0x2f, 0xba,
+	0x6d, 0xae, 0x20, 0x26, 0x0b, 0xb3, 0xbe, 0x62, 0xe1, 0x12, 0xf7, 0x11, 0x7a, 0x06, 0xfa, 0x69,
+	0xcc, 0x80, 0x87, 0x2a, 0xb7, 0xd3, 0xdd, 0x35, 0xdf, 0x51, 0xba, 0xc7, 0xdb, 0xb5, 0x87, 0xdc,
+	0xc6, 0x57, 0x8d, 0x83, 0x51, 0x4a, 0xf4, 0x12, 0x15, 0xdb, 0x61, 0x98, 0x40, 0xf0, 0xed, 0x95,
+	0xdd, 0x49, 0xf8, 0xf8, 0x26, 0xf3, 0x2a, 0x58, 0xb6, 0xbc, 0x25, 0x2f, 0xcb, 0x6b, 0xba, 0x26,
+	0x40, 0xd7, 0x92, 0xa6, 0xf9, 0x5f, 0xec, 0xe9, 0x10, 0xa8, 0xdd, 0xcc, 0xb0, 0x67, 0xae, 0xe5,
+	0x05, 0xda, 0x3a, 0x00, 0xa5, 0x9f, 0x04, 0x63, 0xb1, 0xe1, 0xf3, 0x5f, 0x3f, 0xcb, 0x4a, 0x96,
+	0x1a, 0xe1, 0x2d, 0x43, 0x0d, 0xc1, 0x58, 0x74, 0x7e, 0x2c, 0xfc, 0xd4, 0xfe, 0xc3, 0xc1, 0x2f,
+	0xd1, 0xdb, 0x76, 0xa8, 0x57, 0xcd, 0x54, 0xaf, 0xb6, 0xbb, 0xcf, 0xab, 0xaf, 0x1b, 0xde, 0xc7,
+	0xa8, 0xdc, 0xee, 0x76, 0x7b, 0xd5, 0xe7, 0x7c, 0x24, 0xe2, 0x99, 0x6d, 0xcd, 0xea, 0x01, 0x04,
+	0x63, 0x1f, 0xef, 0x8e, 0xb5, 0x96, 0xaa, 0x45, 0x08, 0x95, 0x52, 0xf9, 0x81, 0x98, 0xf9, 0x3a,
+	0x76, 0x4b, 0x8c, 0x8f, 0xc4, 0x27, 0x99, 0x48, 0xf3, 0x4a, 0xc3, 0xaf, 0xbb, 0x3b, 0x8d, 0xe6,
+	0x63, 0xbf, 0xee, 0xd7, 0xfd, 0x46, 0xeb, 0xf1, 0xfe, 0xa3, 0x7a, 0xcd, 0x71, 0x9a, 0x25, 0x2a,
+	0xe5, 0xf4, 0xb8, 0xd9, 0xbf, 0x52, 0x82, 0xb7, 0xce, 0x45, 0x06, 0x55, 0x74, 0x1d, 0x15, 0x3b,
+	0x54, 0xb1, 0xc0, 0x4c, 0x6b, 0x5c, 0xd8, 0x72, 0xd0, 0x36, 0x2a, 0x76, 0x80, 0xc6, 0x10, 0x7f,
+	0x76, 0xa8, 0xf1, 0x1b, 0xc3, 0xeb, 0x2b, 0x01, 0x74, 0x4b, 0xc7, 0x56, 0xd9, 0x5a, 0x38, 0x73,
+	0x01, 0x9d, 0x6b, 0x27, 0x4f, 0x56, 0x5b, 0xb2, 0xae, 0x33, 0x78, 0x2b, 0x7d, 0x65, 0x7f, 0x2b,
+	0x5c, 0xe9, 0xf5, 0xba, 0xbf, 0x17, 0x4e, 0x9f, 0xb4, 0xe1, 0x9b, 0xf6, 0x2e, 0xf7, 0xff, 0x0d,
+	0x00, 0x00, 0xff, 0xff, 0xc5, 0xfb, 0xad, 0x5b, 0x91, 0x07, 0x00, 0x00,
 }
