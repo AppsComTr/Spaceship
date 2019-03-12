@@ -59,7 +59,7 @@ These tests simulates clients for designed games. If you start up Spaceship corr
 
 ## Development with Spaceship
 
-As can be seen in the feature screen, developers should only focus on developing their own game logic. 
+As it can be seen in the features section, developers should only focus on developing their own game logic. 
 Spaceship handles all other things for them. Spaceship allows defining multiple games on a single server. 
 
 First of all, Spaceship supports 3 types of games. These are; real time, active turn-based and passive turn-based. 
@@ -108,15 +108,15 @@ type GameController interface {
 
 	This method is triggered by Spaceship when clients send data about the game if game mode is turn-based. This can be leaved empty for real time games. For example; if you design turn-based puzzle game, users data should be sent to the server by the client. When Spaceship receive this data, triggers relevant game controllers update method. In this way, any logic for designed game can be executed.
 	
-	`metadata` contains data which is sent by the client. Developers should build their own game data structs and use any serialization methods that they want. Spaceship only accepts strings for metadata. For example; client send data after serialize game data to json string and can unmarshal it in update method.
+	`metadata` contains data which is sent by the client. Developers should build their own game data structs and use any serialization methods that they want. Spaceship only accepts strings for metadata. For example; client send data after serializing game data to json string and can unmarshal it in update method.
 	
 	Leaderboard module is also passed to this method. So, developers can update user scores according to their game play datas.
 	
-	Also developers should decide if game is finished or not in this method and if game is completed, should return true. So Spaceship can understand that this game is completed and write this game's data to db to make it persistent.
+	Also developers should decide if the game is finished or not in this method and if the game is completed, should return true. So Spaceship can understand that this game is completed and write this game's data to db to make it persistent.
 	
 - `Loop(gameData *socketapi.GameData, queuedDatas []socketapi.GameUpdateQueue, leaderboard *Leaderboard, notification *Notification, logger *Logger) bool` method:
 
-	As stated above, this method is repeatedly triggered by Spaceship only when the game mode is real time with given interval. Metadata that comes from clients is passed to this method as array with keeping the arriving order.
+	As stated above, this method is repeatedly triggered by Spaceship only when the game mode is real time with given interval. Metadatas that comes from clients are passed to this method as array by keeping the arriving order.
 	
 - `GetGameSpecs()` method:
 
@@ -130,9 +130,9 @@ type GameController interface {
     }
 	```
 	
-	`PlayerCount` is used by match maker module. This field should contains the number of maximum player count for this game.
+	`PlayerCount` is used by match maker module. This field should contain the number of maximum player count for this game.
 	
-	`Mode` defines the type of this game. As stated above, Spaceship supports 3 game types. These are real time, active turn based and passive turn based. This fields value should be one of the predefined constants in Spaceship. This should be selected carefully according to designed game.
+	`Mode` defines the type of this game. As stated above, Spaceship supports 3 game types. These are real time, active turn based and passive turn based. These fields value should be one of the predefined constants in Spaceship. This should be selected carefully according to designed game.
 	```go
 	const (
     	GAME_TYPE_PASSIVE_TURN_BASED int = iota
@@ -143,7 +143,7 @@ type GameController interface {
 	
 	`TickInterval` is optional. If designed game is a real time game, should contains a valid value in ms format. This is used to define interval between running of game loops. 
 	
-Here you can see an example very basic real time game. This game is designed for two player. Players can attack the boss concurrently. When the boss monster is killed, the last hit wins and the game is finished.
+Here you can see an example very basic real time game. This game is designed for two players. Players can attack the boss concurrently. When the boss monster is killed, the user hit last wins and the game is finished.
 
 ```go
 type RTGame struct {}
@@ -254,9 +254,9 @@ func (tg RTGame) GetGameSpecs() server.GameSpecs {
 	
 ## Technical documentation
 
-This simple documentation part was prepared for who wants to contribute Spaceship.
+This simple documentation part is prepared for developers who may want to contribute Spaceship.
 
-While developing Spaceship, we were inspired from [Nakama](https://github.com/heroiclabs/nakama) and [Open Match](https://github.com/GoogleCloudPlatform/open-match). You can also check these projects too. If you want to learn more detailed informations about project you can [contact us](mailto:mehmet@apps.com.tr).
+While developing Spaceship, we were inspired from [Nakama](https://github.com/heroiclabs/nakama) and [Open Match](https://github.com/GoogleCloudPlatform/open-match). You can also check these projects too. If you want to learn more detailed informations about the project you can [contact us](mailto:mehmet@apps.com.tr).
 
 Spaceship is using rpc technology to serve their endpoints by using [gRPC](https://grpc.ip) framework. It also supports http requests with using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway).
 Spaceship allows clients to make request with gzip compressed body over the http.
@@ -275,7 +275,7 @@ Every single logic part is designed as a module in Spaceship. There are 9 main m
 - PubSub
 - Server
 
-As you can understand from their names, they only responsible for their own jobs. Modules are initialized with other modules if necessary. 
+As you can understand from their names, they are only responsible for their own jobs. Modules are initialized with other modules if necessary. 
 
 To start up server, these all modules should be created and after that, server's `StartServer` method should be called with passing all of these modules.
 In this method, gRPC and grpc-gateway servers are configured. Additional and necessary endpoints are defined on a router to accept web socket connections and serving metrics for [Prometheus](https://prometheus.io) over an endpoint.
@@ -284,13 +284,13 @@ Also one more endpoint is defined on this router to serve static files. For now 
 All other services are defined on the gRPC server instance. They could be found in `api_account.go` and `api_leaderboard.go` files under the server package. 
 
 To accept socket connections, `NewSocketAcceptor` method is used on the router. When a client wants to open a new socket connection, this method is called and it returns an http handler.
-This handler first checks if given token is valid, if it is valid, tries to upgrade the http connection to web socket connection and creates and `Session`.
-Sessions unique for every user. It holds users active connection, informations, connection states etc... It handles incoming and outgoing messages over the socket connection first with `Consume` and `processOutgoing` methods.
+This handler first checks if given token is valid, if it is valid, tries to upgrade the http connection to web socket connection and creates `Session`.
+Sessions are unique for every user. It holds users active connection, informations, connection states etc... It handles incoming and outgoing messages over the socket connection first with `Consume` and `processOutgoing` methods.
 
-Incoming messages over the socket connection are passed to **pipeline** module. This module is responsible of redirecting message to correct place and returning their responses - if exists - to clients. Game data is broadcast over this module.
+Incoming messages over the socket connection are passed to **pipeline** module. This module is responsible for redirecting message to correct place and returning their responses - if exists - to clients. Game data is broadcast over this module.
 For example, when a client sends a match find message, it redirects this message to **matchmaker** module.
 
-**PubSub** module is used to send messages to socket clients. To support horizontal scaling for the projects which use socket connections, a message brokers should be used. Because, when a client trigger something on any node of server that broadcast messages to other users, other nodes also should be notified. Some of the users may connected to different nodes with redirecting of load balancers.
-This module basically subscribe to a queue on the message broker. When a message comes from that queue it checks the user ids which are in the message from session holder to detect sessions that connected to current node. If session exist on this node, data of the message is sent to this client over web socket. Also, this module has a method named `Send`. This method publish message to all queues. So, subscribers can be notified about the messages. If a message is wanted to send to the clients, this module's `Send` method should be used.
-If connections string was defined for **Rabbit MQ** server, it is used. Otherwise, it just redirects messages to sessions directly. 
+**PubSub** module is used to send messages to socket clients. To support horizontal scaling for the projects which use socket connections, a message brokers should be used. Because, when a client triggers something on any node of server that broadcasts messages to other users, other nodes also should be notified. Some of the users may connected to different nodes with redirecting of load balancers.
+This module basically subscribe to a queue on the message broker. When a message comes from that queue it checks the user ids which are in the message from session holder to detect sessions that connected to current node. If session exist on this node, data of the message is sent to this client over web socket. Also, this module has a method named `Send`. This method publishes message to all queues. So, subscribers can be notified about the messages. If a message is needed to be sent to the clients, this module's `Send` method should be used.
+If connection string was defined for **Rabbit MQ** server, distributed system is supported. Otherwise, it just redirects messages to sessions directly. 
  
