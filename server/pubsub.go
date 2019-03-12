@@ -9,6 +9,7 @@ import (
 )
 
 type PubSub struct {
+	isEnabled bool
 	pubChan *amqp.Channel
 	subChan *amqp.Channel
 	sessionHolder *SessionHolder
@@ -18,25 +19,26 @@ type PubSub struct {
 	context context.Context
 }
 
-func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, logger *Logger, context context.Context) *PubSub {
+func NewPubSub(config *Config, sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, jsonpbUnmarshaler *jsonpb.Unmarshaler, logger *Logger, context context.Context) *PubSub {
 
-	conn, err := amqp.Dial("amqp://qqbrajzx:wDiFe2gSdDxbjkFyb3mr_4raCux9VXh7@bear.rmq.cloudamqp.com/qqbrajzx")
-	if err != nil {
-		logger.Fatalw("Error while trying to connect amqp server", "error", err)
-	}
+	if config.RabbitMQ.ConnectionString != "" {
+		conn, err := amqp.Dial(config.RabbitMQ.ConnectionString)
+		if err != nil {
+			logger.Fatalw("Error while trying to connect amqp server", "error", err)
+		}
 
-	pubChan, err := conn.Channel()
-	if err != nil {
-		logger.Fatalw("Error while trying to open a channel for publish over amqp connection", "error", err)
-	}
+		pubChan, err := conn.Channel()
+		if err != nil {
+			logger.Fatalw("Error while trying to open a channel for publish over amqp connection", "error", err)
+		}
 
-	subChan, err := conn.Channel()
-	if err != nil {
-		logger.Fatalw("Error while trying to open a channel for subscibe over amqp connection", "error", err)
-	}
+		subChan, err := conn.Channel()
+		if err != nil {
+			logger.Fatalw("Error while trying to open a channel for subscibe over amqp connection", "error", err)
+		}
 
-	//Now we should define exchange for both channels
-	err = pubChan.ExchangeDeclare(
+		//Now we should define exchange for both channels
+		err = pubChan.ExchangeDeclare(
 			"messages",
 			"fanout",
 			true,
@@ -45,24 +47,24 @@ func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, j
 			false,
 			nil,
 		)
-	if err != nil {
-		logger.Fatalw("Error while trying to define exchange over publish channel", "error", err)
-	}
+		if err != nil {
+			logger.Fatalw("Error while trying to define exchange over publish channel", "error", err)
+		}
 
-	err = subChan.ExchangeDeclare(
-		"messages",
-		"fanout",
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		logger.Fatalw("Error while trying to define exchange over subscribe channel", "error", err)
-	}
+		err = subChan.ExchangeDeclare(
+			"messages",
+			"fanout",
+			true,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			logger.Fatalw("Error while trying to define exchange over subscribe channel", "error", err)
+		}
 
-	q, err := subChan.QueueDeclare(
+		q, err := subChan.QueueDeclare(
 			"",
 			false,
 			false,
@@ -70,22 +72,22 @@ func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, j
 			false,
 			nil,
 		)
-	if err != nil {
-		logger.Fatalw("Error while trying to define queue over subscribe channel", "error", err)
-	}
+		if err != nil {
+			logger.Fatalw("Error while trying to define queue over subscribe channel", "error", err)
+		}
 
-	err = subChan.QueueBind(
+		err = subChan.QueueBind(
 			q.Name,
 			"",
 			"messages",
 			false,
 			nil,
 		)
-	if err != nil {
-		logger.Fatalw("Error while binding queue to subscribe channel", "error", err)
-	}
+		if err != nil {
+			logger.Fatalw("Error while binding queue to subscribe channel", "error", err)
+		}
 
-	msgs, err := subChan.Consume(
+		msgs, err := subChan.Consume(
 			q.Name,
 			"",
 			true,
@@ -94,59 +96,70 @@ func NewPubSub(sessionHolder *SessionHolder, jsonpbMarshler *jsonpb.Marshaler, j
 			false,
 			nil,
 		)
-	if err != nil{
-		logger.Fatalw("Error while trying to create consumer channel on subscribe channel", "error", err)
-	}
-
-	go func(){
-
-		defer conn.Close()
-
-		for {
-
-			select {
-			case <- context.Done():
-				logger.Info("Exiting from subscribe routine")
-				return
-			case msg := <- msgs:
-
-				if msg.ContentType == "application/json" {
-
-					msgModel := &socketapi.PubSubMessage{}
-
-					err := jsonpbUnmarshaler.Unmarshal(bytes.NewReader(msg.Body), msgModel)
-					if err != nil {
-						logger.Errorw("Error while unmarshal pub sub message data", "error", err)
-						continue
-					}
-
-					for _, userID := range msgModel.UserIDs {
-
-						session := sessionHolder.GetByUserID(userID)
-						if session != nil {
-							_ = session.Send(false, 0, msgModel.Data)
-						}
-
-					}
-
-				}else{
-					logger.Errorw("Unrecognized content type received", "content-type", msg.ContentType)
-				}
-			}
-
+		if err != nil{
+			logger.Fatalw("Error while trying to create consumer channel on subscribe channel", "error", err)
 		}
 
-	}()
+		go func(){
+
+			defer conn.Close()
+
+			for {
+
+				select {
+				case <- context.Done():
+					logger.Info("Exiting from subscribe routine")
+					return
+				case msg := <- msgs:
+
+					if msg.ContentType == "application/json" {
+
+						msgModel := &socketapi.PubSubMessage{}
+
+						err := jsonpbUnmarshaler.Unmarshal(bytes.NewReader(msg.Body), msgModel)
+						if err != nil {
+							logger.Errorw("Error while unmarshal pub sub message data", "error", err)
+							continue
+						}
+
+						for _, userID := range msgModel.UserIDs {
+
+							session := sessionHolder.GetByUserID(userID)
+							if session != nil {
+								_ = session.Send(false, 0, msgModel.Data)
+							}
+
+						}
+
+					}else{
+						logger.Errorw("Unrecognized content type received", "content-type", msg.ContentType)
+					}
+				}
+
+			}
+
+		}()
 
 
-	return &PubSub{
-		sessionHolder: sessionHolder,
-		logger: logger,
-		pubChan: pubChan,
-		subChan: subChan,
-		jsonpbMarshler: jsonpbMarshler,
-		jsonpbUnmarshaler: jsonpbUnmarshaler,
-		context: context,
+		return &PubSub{
+			isEnabled: true,
+			sessionHolder: sessionHolder,
+			logger: logger,
+			pubChan: pubChan,
+			subChan: subChan,
+			jsonpbMarshler: jsonpbMarshler,
+			jsonpbUnmarshaler: jsonpbUnmarshaler,
+			context: context,
+		}
+	}else{
+		return &PubSub{
+			isEnabled: false,
+			sessionHolder: sessionHolder,
+			logger: logger,
+			jsonpbMarshler: jsonpbMarshler,
+			jsonpbUnmarshaler: jsonpbUnmarshaler,
+			context: context,
+		}
 	}
 
 }
@@ -169,8 +182,8 @@ func (ps *PubSub) Send(message *socketapi.PubSubMessage) error {
 
 	}
 
-	//If we still have user IDs remaining we need to publish them
-	if len(publishUserIDs) > 0 {
+	//If we still have user IDs remaining and if pubsub module is enabled we need to publish them
+	if ps.isEnabled && len(publishUserIDs) > 0 {
 
 		message.UserIDs = publishUserIDs
 		data, err := ps.jsonpbMarshler.MarshalToString(message)

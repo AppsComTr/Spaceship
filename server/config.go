@@ -28,4 +28,7 @@ type Config struct {
 		AppKey string
 		AppID string
 	}
+	RabbitMQ struct {
+		ConnectionString string `default:""`
+	}
 }
