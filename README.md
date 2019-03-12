@@ -10,17 +10,19 @@
 - Leaderboard with built-in groups like (daily, weekly etc. and for spececific game or overall the games)
 - Matchmaker with customizable parameters for all game types
 - Simple metrics which is collected with OpenCensus
+- Distributed system support with message broker ([RabbitMQ](https://www.rabbitmq.com))
 
-Spaceship is a online game backend framework designed to allow game creators to build their own game's server side without the hassle of the common parts of every multiplayer games.
-You can build your own game server with just working on logic of the game. We don't support distributed systems for now.
+Spaceship is an online game backend framework designed to allow game creators to build their own game's server side without the hassle of the common parts of every multiplayer games.
+You can build your own game server with just working on logic of the game. We have support for distributed systems now.
 
 ## Getting started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing.
+These instructions will help you to get a copy of the project and run on your local machine for development and testing.
 
 ### Prerequisites
 
-Spaceship requires Redis and MongoDB. 
+Spaceship requires Redis and MongoDB.
+If you are planning to use Spaceship on distributed system you also need a RabbitMQ server. But this is optional. If you don't want to use this feature, just delete connection string for **RabbitMQ** or leave it empty in configuration file. You can follow the instructions from [here](https://www.rabbitmq.com/download.html) to install your own **RabbitMQ** server.
 Redis is generally used by matchmaker module and storing game datas which is not finished yet to speed up processes.
 MongoDB is used for persistancy of user datas, scores and finished game datas etc...
 
@@ -51,18 +53,18 @@ Or you can just run `make protogen` command.
 
 ## Running the tests
 
-We've already prepared example games of all game types and test codes. These files can be found under `test` package.
+We've already prepared simple example games for all game types and test codes. These files can be found under `test` package.
 These tests simulates clients for designed games. If you start up Spaceship correctly, tests should be successful.
 
 ## Development with Spaceship
 
 As can be seen in the feature screen, developers should only focus on developing their own game logic. 
-Spaceship handles all other things for them. Spaceship allows defining multiple games.
+Spaceship handles all other things for them. Spaceship allows defining multiple games on a single server. 
 
 First of all, Spaceship supports 3 types of games. These are; real time, active turn-based and passive turn-based. 
-Real time games works with looper mechanism on server side. Data is not directly processed, they are queued to handled in loop method with interval which can be defined in config.
+Real time games works with looper mechanism on server side. Data is not directly processed, they are queued to be handled in loop method with given interval which can be defined in config.
 For the other types, datas are not queued and processed in update method when they are arrived to server.
-Matchmaker works different for passive turn-based games according to others. Because others are considered as active games and they should be start after complete the user count for given game.
+Matchmaker works different for passive turn-based games according to others. Because others are considered as active games and they should be started after complete the user count for given game.
 Because of these, `Mode` field in game specs should be defined carefully according to designed game.
 
 To attach a game to Spaceship, developers should implement the `GameController` methods. These are:
@@ -140,7 +142,7 @@ type GameController interface {
 	
 	`TickInterval` is optional. If designed game is a real time game, should contains a valid value in ms format. This is used to define interval between running of game loops. 
 	
-There you can see an example very basic real time game. This game is designed for two player. Players can attack the boss concurrently. When the boss monster is killed, the last hit wins and the game is finished.
+Here you can see an example very basic real time game. This game is designed for two player. Players can attack the boss concurrently. When the boss monster is killed, the last hit wins and the game is finished.
 
 ```go
 type RTGame struct {}
@@ -253,14 +255,14 @@ func (tg RTGame) GetGameSpecs() server.GameSpecs {
 
 This simple documentation part was prepared for who wants to contribute Spaceship.
 
-While developing Spaceship, we were inspired from [Nakama](https://github.com/heroiclabs/nakama) and [Open Match](https://github.com/GoogleCloudPlatform/open-match). You can also check these projects too.
+While developing Spaceship, we were inspired from [Nakama](https://github.com/heroiclabs/nakama) and [Open Match](https://github.com/GoogleCloudPlatform/open-match). You can also check these projects too. If you want to learn more detailed informations about project you can [contact us](mailto:mehmet@apps.com.tr).
 
 Spaceship is using rpc technology to serve their endpoints by using [gRPC](https://grpc.ip) framework. It also supports http requests with using [grpc-gateway](https://github.com/grpc-ecosystem/grpc-gateway).
 Spaceship allows clients to make request with gzip compressed body over the http.
 Also, it supports both json and proto messages over the socket connection. 
 As spaceship uses gRPC, [Protocol Buffers](https://github.com/protocolbuffers/protobuf) is used to model messages and services. If you want to add a new service or modify existing one, you should regenerate codes with described in [Installing](#installing) section.
 
-Every single logic part is designed as a module in Spaceship. There are 8 main module in Spaceship. These are:
+Every single logic part is designed as a module in Spaceship. There are 9 main module in Spaceship. These are:
 
 - Notification
 - Leaderboard
@@ -269,6 +271,7 @@ Every single logic part is designed as a module in Spaceship. There are 8 main m
 - Game holder 
 - Matchmaker
 - Pipeline
+- PubSub
 - Server
 
 As you can understand from their names, they only responsible for their own jobs. Modules are initialized with other modules if necessary. 
@@ -285,3 +288,8 @@ Sessions unique for every user. It holds users active connection, informations, 
 
 Incoming messages over the socket connection are passed to **pipeline** module. This module is responsible of redirecting message to correct place and returning their responses - if exists - to clients. Game data is broadcast over this module.
 For example, when a client sends a match find message, it redirects this message to **matchmaker** module.
+
+**PubSub** module is used to send messages to socket clients. To support horizontal scaling for the projects which use socket connections, a message brokers should be used. Because, when a client trigger something on any node of server that broadcast messages to other users, other nodes also should be notified. Some of the users may connected to different nodes with redirecting of load balancers.
+This module basically subscribe to a queue on the message broker. When a message comes from that queue it checks the user ids which are in the message from session holder to detect sessions that connected to current node. If session exist on this node, data of the message is sent to this client over web socket. Also, this module has a method named `Send`. This method publish message to all queues. So, subscribers can be notified about the messages. If a message is wanted to send to the clients, this module's `Send` method should be used.
+If connections string was defined for **Rabbit MQ** server, it is used. Otherwise, it just redirects messages to sessions directly. 
+ 
