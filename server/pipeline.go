@@ -5,6 +5,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/kayalardanmehmet/redsync-radix"
 	"github.com/mediocregopher/radix/v3"
+	"spaceship/model"
 	"spaceship/socketapi"
 )
 
@@ -19,9 +20,10 @@ type Pipeline struct {
 	redis radix.Client
 	notification *Notification
 	logger *Logger
+	pubSub *PubSub
 }
 
-func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session, redis radix.Client, notification *Notification, logger *Logger) *Pipeline {
+func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoUnmarshler *jsonpb.Unmarshaler, gameHolder *GameHolder, sessionHolder *SessionHolder, matchmaker Matchmaker, db *mgo.Session, redis radix.Client, notification *Notification, logger *Logger, pubSub *PubSub) *Pipeline {
 	return &Pipeline{
 		config: config,
 		gameHolder: gameHolder,
@@ -33,6 +35,7 @@ func NewPipeline(config *Config, jsonProtoMarshler *jsonpb.Marshaler, jsonProtoU
 		redis: redis,
 		notification: notification,
 		logger: logger,
+		pubSub: pubSub,
 	}
 }
 
@@ -55,10 +58,17 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 
 		if err != nil {
 			p.logger.Errorw("Error occured while updating game state", "error", err)
-			_ = session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
-				Code: int32(socketapi.Error_RUNTIME_EXCEPTION),
-				Message: "Error occured while updating game state: " + err.Error(),
-			}}})
+			_ = p.pubSub.Send(&model.PubSubMessage{
+				UserIDs: []string{session.UserID()},
+				Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
+					Code: int32(socketapi.Error_RUNTIME_EXCEPTION),
+					Message: "Error occured while updating game state: " + err.Error(),
+				}}},
+			})
+			//_ = session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
+			//	Code: int32(socketapi.Error_RUNTIME_EXCEPTION),
+			//	Message: "Error occured while updating game state: " + err.Error(),
+			//}}})
 		}
 
 		break
@@ -72,10 +82,17 @@ func (p *Pipeline) handleSocketRequests(session Session, envelope *socketapi.Env
 		// If we reached this point the envelope was valid but the contents are missing or unknown.
 		// Usually caused by a version mismatch, and should cause the session making this pipeline request to close.
 		p.logger.Errorw("Unrecognizable payload received.", "envelope", envelope)
-		_ =session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
-			Code:    int32(socketapi.Error_UNRECOGNIZED_PAYLOAD),
-			Message: "Unrecognized message.",
-		}}})
+		_ = p.pubSub.Send(&model.PubSubMessage{
+			UserIDs: []string{session.UserID()},
+			Data: &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
+				Code:    int32(socketapi.Error_UNRECOGNIZED_PAYLOAD),
+				Message: "Unrecognized message.",
+			}}},
+		})
+		//_ =session.Send(false, 0, &socketapi.Envelope{Cid: envelope.Cid, Message: &socketapi.Envelope_Error{Error: &socketapi.Error{
+		//	Code:    int32(socketapi.Error_UNRECOGNIZED_PAYLOAD),
+		//	Message: "Unrecognized message.",
+		//}}})
 		return false
 	}
 	

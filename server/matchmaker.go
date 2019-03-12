@@ -7,6 +7,7 @@ import (
 	"github.com/kayalardanmehmet/redsync-radix"
 	"github.com/mediocregopher/radix/v3"
 	"github.com/satori/go.uuid"
+	"spaceship/model"
 	"spaceship/socketapi"
 	"sync"
 	"time"
@@ -31,13 +32,14 @@ type LocalMatchmaker struct {
 	logger *Logger
 	config *Config
 	pipeline *Pipeline
+	pubSub *PubSub
 
 	context context.Context
 
 	entries map[string]*socketapi.MatchEntry
 }
 
-func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder, notification *Notification, logger *Logger, config *Config, context context.Context) Matchmaker {
+func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolder *SessionHolder, notification *Notification, logger *Logger, config *Config, pubSub *PubSub, context context.Context) Matchmaker {
 	return &LocalMatchmaker{
 		redis: redis,
 		gameHolder: gameHolder,
@@ -46,6 +48,7 @@ func NewLocalMatchMaker(redis radix.Client, gameHolder *GameHolder, sessionHolde
 		notification: notification,
 		logger: logger,
 		config: config,
+		pubSub: pubSub,
 		context: context,
 	}
 }
@@ -644,12 +647,21 @@ func (m *LocalMatchmaker) LeaveActiveGames(userID string) error {
 //Anti pattern
 func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.MatchEntry, selfUserID string, err error, code int32) {
 	if err != nil {
-		_ = session.Send(false, 0, &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchError{
-			MatchError: &socketapi.MatchError{
-				Code: code,
-				Message: err.Error(),
-			},
-		}})
+		_ = m.pubSub.Send(&model.PubSubMessage{
+			UserIDs: []string{session.UserID()},
+			Data: &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchError{
+				MatchError: &socketapi.MatchError{
+					Code: code,
+					Message: err.Error(),
+				},
+			}},
+		})
+		//_ = session.Send(false, 0, &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchError{
+		//	MatchError: &socketapi.MatchError{
+		//		Code: code,
+		//		Message: err.Error(),
+		//	},
+		//}})
 		return
 	}
 
@@ -665,13 +677,20 @@ func (m *LocalMatchmaker) broadcastMatch(session Session, match *socketapi.Match
 
 	//Need to fetch all users session by their ids from gameData and send them msg
 	message := &socketapi.Envelope{Cid: "", Message: &socketapi.Envelope_MatchEntry{MatchEntry: match}}
+	userIDs := make([]string, 0)
 	for _, user := range match.Users {
-		session := m.sessionHolder.GetByUserID(user.UserId)
-		//TODO while finding match if host user closes session throws npe. For now fixed with nil check
-		if session != nil {
-			_ = session.Send(false, 0, message)
-		}
+		userIDs = append(userIDs, user.UserId)
+		////TODO while finding match if host user closes session throws npe. For now fixed with nil check
+		//if session != nil {
+		//
+		//	_ = session.Send(false, 0, message)
+		//}
 	}
+
+	_ = m.pubSub.Send(&model.PubSubMessage{
+		UserIDs: userIDs,
+		Data: message,
+	})
 }
 
 func (m *LocalMatchmaker) ClearMatch(matchID string) {
