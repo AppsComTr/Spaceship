@@ -296,3 +296,27 @@ For example, when a client sends a match find message, it redirects this message
 This module basically subscribe to a queue on the message broker. When a message comes from that queue it checks the user ids which are in the message from session holder to detect sessions that connected to current node. If session exist on this node, data of the message is sent to this client over web socket. Also, this module has a method named `Send`. This method publishes message to all queues. So, subscribers can be notified about the messages. If a message is needed to be sent to the clients, this module's `Send` method should be used.
 If connection string was defined for **Rabbit MQ** server, distributed system is supported. Otherwise, it just redirects messages to sessions directly. 
  
+ 
+ ## License
+ 
+ MIT License
+
+Copyright (c) 2019 Apps
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
